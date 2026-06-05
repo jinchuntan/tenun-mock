@@ -89,6 +89,22 @@ const en = {
       "Every candidate is vetted by Tenun before being recommended, so partners know you're more than just another application.",
     browseAll: "Browse all companies",
   },
+  companyTicker: {
+    label: "Now hiring through Tenun",
+    rolesOpen: "roles open",
+  },
+  employerSignalStrip: {
+    label: "Early-talent signals Tenun helps you see",
+    signals: [
+      "Role fit",
+      "Portfolio evidence",
+      "CV readiness",
+      "Skill gaps",
+      "Interview intent",
+      "Availability",
+      "Salary fit",
+    ],
+  },
   weaverFeatures: {
     eyebrow: "For Weavers.",
     title: "Built for people who don't know their job title yet.",
@@ -487,6 +503,22 @@ const ms: Translations = {
     subtitle:
       "Setiap calon disaring oleh Tenun sebelum disyorkan, jadi rakan kongsi tahu anda lebih daripada sekadar satu lagi permohonan.",
     browseAll: "Lihat semua syarikat",
+  },
+  companyTicker: {
+    label: "Sedang mengambil calon melalui Tenun",
+    rolesOpen: "jawatan dibuka",
+  },
+  employerSignalStrip: {
+    label: "Isyarat bakat awal yang Tenun bantu anda lihat",
+    signals: [
+      "Kesesuaian peranan",
+      "Bukti portfolio",
+      "Kesediaan CV",
+      "Jurang kemahiran",
+      "Niat temuduga",
+      "Ketersediaan",
+      "Kesesuaian gaji",
+    ],
   },
   weaverFeatures: {
     eyebrow: "Untuk Weavers.",

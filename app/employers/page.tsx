@@ -6,6 +6,7 @@ import { MotionConfig } from "framer-motion";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { EmployerHero } from "@/components/employers/EmployerHero";
+import { EmployerSignalStrip } from "@/components/employers/EmployerSignalStrip";
 import { EmployerSteps } from "@/components/employers/EmployerSteps";
 import { CandidateSignalSection } from "@/components/employers/CandidateSignalSection";
 import { ComparisonSection } from "@/components/employers/ComparisonSection";
@@ -36,6 +37,7 @@ export default function EmployersPage() {
             onPostRole={() => scrollToId("employer-form")}
             onViewPreview={() => goToDashboard("Data Analyst Intern")}
           />
+          <EmployerSignalStrip />
           <EmployerSteps />
           <CandidateSignalSection />
           <ComparisonSection />

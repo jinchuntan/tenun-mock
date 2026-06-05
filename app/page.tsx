@@ -7,6 +7,7 @@ import { Sparkles, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
+import { CompanyTickerSlim } from "@/components/landing/CompanyTickerSlim";
 import { HeroSection } from "@/components/landing/HeroSection";
 import { ThreeStepsSection } from "@/components/landing/ThreeStepsSection";
 import { PartnersSection } from "@/components/landing/PartnersSection";
@@ -70,6 +71,11 @@ export default function HomePage() {
     <MotionConfig reducedMotion="user">
     <div className="min-h-screen bg-ivory overflow-x-clip">
       <Navbar />
+
+      {/* Slim hiring ticker directly below the fixed navbar */}
+      <div className="pt-16">
+        <CompanyTickerSlim />
+      </div>
 
       <main>
         {/* ── HERO ── */}

@@ -24,7 +24,7 @@ export function HeroSection({
   const gamesQuery = locale === "ms" ? `Saya nak ${query} permainan` : `I want to ${query} games`;
   return (
     <section
-      className="relative pt-28 pb-12 md:pt-32 md:pb-16 overflow-hidden"
+      className="relative pt-10 pb-12 md:pt-12 md:pb-16 overflow-hidden"
       aria-labelledby="hero-heading"
     >
       <div className="absolute inset-0 dot-pattern opacity-[0.35] pointer-events-none" />
