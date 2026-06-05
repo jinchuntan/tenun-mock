@@ -1,0 +1,46 @@
+"use client";
+
+import { useState } from "react";
+import { MotionConfig } from "framer-motion";
+import { Navbar } from "@/components/navbar";
+import { Footer } from "@/components/footer";
+import { EmployerHero } from "@/components/employers/EmployerHero";
+import { EmployerSteps } from "@/components/employers/EmployerSteps";
+import { CandidateSignalSection } from "@/components/employers/CandidateSignalSection";
+import { ComparisonSection } from "@/components/employers/ComparisonSection";
+import { EmployerPortalPreview } from "@/components/employers/EmployerPortalPreview";
+import { EmployerForm } from "@/components/employers/EmployerForm";
+import { EmployerFAQ } from "@/components/employers/EmployerFAQ";
+
+export default function EmployersPage() {
+  const [roleTitle, setRoleTitle] = useState("");
+
+  const scrollToId = (id: string) =>
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+
+  return (
+    <MotionConfig reducedMotion="user">
+      <div className="min-h-screen bg-ivory overflow-x-clip">
+        <Navbar />
+
+        <main>
+          <EmployerHero
+            roleTitle={roleTitle}
+            setRoleTitle={setRoleTitle}
+            onFindCandidates={() => scrollToId("employer-form")}
+            onPostRole={() => scrollToId("employer-form")}
+            onViewPreview={() => scrollToId("portal-preview")}
+          />
+          <EmployerSteps />
+          <CandidateSignalSection />
+          <ComparisonSection />
+          <EmployerPortalPreview />
+          <EmployerForm roleTitle={roleTitle} />
+          <EmployerFAQ />
+        </main>
+
+        <Footer />
+      </div>
+    </MotionConfig>
+  );
+}
