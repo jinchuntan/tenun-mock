@@ -93,16 +93,19 @@ const en = {
     label: "Now hiring through Tenun",
     rolesOpen: "roles open",
   },
-  employerSignalStrip: {
-    label: "Early-talent signals Tenun helps you see",
+  employerTicker: {
+    label: "Hiring signals through Tenun",
     signals: [
-      "Role fit",
+      "Role fit signals",
       "Portfolio evidence",
       "CV readiness",
-      "Skill gaps",
+      "Skill gap clarity",
       "Interview intent",
-      "Availability",
-      "Salary fit",
+      "Availability signals",
+      "Salary expectation fit",
+      "Culture fit context",
+      "Career pathway match",
+      "Early talent readiness",
     ],
   },
   weaverFeatures: {
@@ -508,16 +511,19 @@ const ms: Translations = {
     label: "Sedang mengambil calon melalui Tenun",
     rolesOpen: "jawatan dibuka",
   },
-  employerSignalStrip: {
-    label: "Isyarat bakat awal yang Tenun bantu anda lihat",
+  employerTicker: {
+    label: "Isyarat pengambilan melalui Tenun",
     signals: [
-      "Kesesuaian peranan",
+      "Isyarat kesesuaian peranan",
       "Bukti portfolio",
       "Kesediaan CV",
-      "Jurang kemahiran",
+      "Kejelasan jurang kemahiran",
       "Niat temuduga",
-      "Ketersediaan",
-      "Kesesuaian gaji",
+      "Isyarat ketersediaan",
+      "Kesesuaian jangkaan gaji",
+      "Konteks kesesuaian budaya",
+      "Padanan laluan kerjaya",
+      "Kesediaan bakat awal",
     ],
   },
   weaverFeatures: {

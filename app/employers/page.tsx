@@ -6,7 +6,7 @@ import { MotionConfig } from "framer-motion";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { EmployerHero } from "@/components/employers/EmployerHero";
-import { EmployerSignalStrip } from "@/components/employers/EmployerSignalStrip";
+import { EmployerTickerSlim } from "@/components/employers/EmployerTickerSlim";
 import { EmployerSteps } from "@/components/employers/EmployerSteps";
 import { CandidateSignalSection } from "@/components/employers/CandidateSignalSection";
 import { ComparisonSection } from "@/components/employers/ComparisonSection";
@@ -29,6 +29,11 @@ export default function EmployersPage() {
       <div className="min-h-screen bg-ivory overflow-x-clip">
         <Navbar />
 
+        {/* Slim employer signal ticker directly below the fixed navbar */}
+        <div className="pt-16">
+          <EmployerTickerSlim />
+        </div>
+
         <main>
           <EmployerHero
             roleTitle={roleTitle}
@@ -37,7 +42,6 @@ export default function EmployersPage() {
             onPostRole={() => scrollToId("employer-form")}
             onViewPreview={() => goToDashboard("Data Analyst Intern")}
           />
-          <EmployerSignalStrip />
           <EmployerSteps />
           <CandidateSignalSection />
           <ComparisonSection />

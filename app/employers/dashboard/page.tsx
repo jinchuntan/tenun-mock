@@ -1,9 +1,11 @@
 "use client";
 
 import { Suspense, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, usePathname } from "next/navigation";
 import { Search, Users, Star, FolderCheck, CalendarCheck, Loader2 } from "lucide-react";
 import { Navbar } from "@/components/navbar";
+import { SubNavBar } from "@/components/layout/SubNavBar";
+import { getDashboardReturn } from "@/lib/navigation";
 import { Footer } from "@/components/footer";
 import { CandidateCard } from "@/components/employers/dashboard/CandidateCard";
 import { CandidateDetail } from "@/components/employers/dashboard/CandidateDetail";
@@ -36,6 +38,7 @@ function StatCard({
 
 function DashboardInner() {
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   const initialRole = (searchParams.get("role") ?? DEFAULT_ROLE).trim() || DEFAULT_ROLE;
 
   const [query, setQuery] = useState(initialRole);
@@ -82,6 +85,12 @@ function DashboardInner() {
       <Navbar />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16">
+        <SubNavBar
+          className="mb-6"
+          breadcrumbs={[{ label: "Employers", href: "/employers" }, { label: "Candidate Dashboard" }]}
+          returnTo={getDashboardReturn(pathname)}
+        />
+
         {/* Header */}
         <div className="mb-6">
           <p className="text-xs font-semibold text-gold-600 uppercase tracking-wider mb-1.5">Employer workspace</p>

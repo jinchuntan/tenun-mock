@@ -19,7 +19,7 @@ export function EmployerHero({
   const e = dict.employerHero;
   return (
     <section
-      className="relative pt-28 pb-12 md:pt-32 md:pb-16 overflow-hidden"
+      className="relative pt-10 pb-12 md:pt-12 md:pb-16 overflow-hidden"
       aria-labelledby="employer-hero-heading"
     >
       <div className="absolute inset-0 dot-pattern opacity-[0.35] pointer-events-none" />
@@ -64,24 +64,30 @@ export function EmployerHero({
         >
           <form
             onSubmit={(e) => { e.preventDefault(); onFindCandidates(); }}
-            className="relative max-w-xl mx-auto"
+            className="max-w-xl mx-auto"
           >
-            <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-navy-400 pointer-events-none" />
-            <input
-              type="text"
-              value={roleTitle}
-              onChange={(e) => setRoleTitle(e.target.value)}
-              placeholder={e.rolePlaceholder}
-              aria-label={e.rolePlaceholder}
-              className="w-full pr-44 py-5 rounded-full border border-beige-300 bg-white/90 text-sm sm:text-base text-navy-900 placeholder:text-navy-400 focus:outline-none focus:ring-4 focus:ring-gold-500/15 focus:border-gold-400 transition-all shadow-lg shadow-navy-900/5"
-              style={{ paddingLeft: "3.25rem" }}
-            />
-            <button
-              type="submit"
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5 px-5 py-3 rounded-full bg-navy-900 text-white text-sm font-semibold hover:bg-gold-500 hover:text-navy-900 transition-all"
-            >
-              {e.findCandidates}
-            </button>
+            {/* Input and button are flex siblings, so long queries scroll
+                inside the input and never slide under the CTA. The border,
+                shadow, and focus ring live on the container. */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 rounded-3xl sm:rounded-full border border-beige-300 bg-white/90 shadow-lg shadow-navy-900/5 p-2 sm:py-2 sm:pl-5 sm:pr-2 transition-all focus-within:border-gold-400 focus-within:ring-4 focus-within:ring-gold-500/15">
+              <div className="flex items-center gap-2.5 flex-1 min-w-0 px-3 sm:px-0">
+                <Search className="w-5 h-5 text-navy-400 shrink-0 pointer-events-none" />
+                <input
+                  type="text"
+                  value={roleTitle}
+                  onChange={(e) => setRoleTitle(e.target.value)}
+                  placeholder={e.rolePlaceholder}
+                  aria-label={e.rolePlaceholder}
+                  className="flex-1 min-w-0 bg-transparent py-2.5 text-sm sm:text-base text-navy-900 placeholder:text-navy-400 focus:outline-none"
+                />
+              </div>
+              <button
+                type="submit"
+                className="shrink-0 w-full sm:w-auto flex items-center justify-center gap-1.5 px-5 py-3 rounded-full bg-navy-900 text-white text-sm font-semibold hover:bg-gold-500 hover:text-navy-900 transition-all"
+              >
+                {e.findCandidates}
+              </button>
+            </div>
           </form>
 
           {/* CTAs */}

@@ -11,7 +11,7 @@ import {
   verticalListSortingStrategy, arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Trash2, Plus, Eye, Save, ChevronLeft } from "lucide-react";
+import { GripVertical, Trash2, Plus, Eye, Save, ChevronLeft, LayoutDashboard } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
@@ -156,6 +156,13 @@ export default function EditCVPage() {
   const activeBlock = ui.activeBlockId ? blocks.byId[ui.activeBlockId] : null;
   const Template = meta.style === "creative" ? CreativeTemplate : HarvardTemplate;
 
+  // Guard navigation while a save may still be in flight (autosave debounces 2s).
+  const hasUnsaved = meta.isDirty || ui.saveStatus === "saving";
+  function leave(href: string) {
+    if (hasUnsaved && !window.confirm("Your latest changes may still be saving. Leave this page anyway?")) return;
+    router.push(href);
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#f5f0e8] flex items-center justify-center">
@@ -167,26 +174,45 @@ export default function EditCVPage() {
   return (
     <div className="h-screen flex flex-col bg-[#f5f0e8] overflow-hidden">
       {/* Top bar */}
-      <header className="h-12 bg-[#0a1628] flex items-center px-4 gap-3 shrink-0 border-b border-white/5">
+      <header className="h-14 bg-[#0a1628] flex items-center px-3 sm:px-4 gap-2 sm:gap-3 shrink-0 border-b border-white/5">
         <button
-          onClick={() => router.push("/dashboard/cv")}
-          className="text-white/40 hover:text-white transition-colors"
+          onClick={() => leave("/dashboard/cv")}
+          className="flex items-center gap-1.5 text-white/60 hover:text-white transition-colors shrink-0"
+          aria-label="Back to all CVs"
         >
           <ChevronLeft size={18} />
+          <span className="hidden sm:inline text-xs font-medium">All CVs</span>
         </button>
+
+        {/* Breadcrumb context */}
+        <div className="hidden lg:flex items-center gap-1.5 text-[11px] text-white/30 shrink-0" aria-hidden="true">
+          <span>Dashboard</span><span>/</span><span>CV Builder</span><span>/</span>
+          <span className="text-white/60 font-medium">Editing</span>
+        </div>
+
+        <div className="hidden lg:block w-px h-4 bg-white/10 shrink-0" />
 
         <input
           value={meta.title}
           onChange={(e) => dispatch(setTitle(e.target.value))}
           className="flex-1 bg-transparent text-white text-sm font-medium focus:outline-none placeholder:text-white/30 min-w-0"
           placeholder="Untitled CV"
+          aria-label="CV title"
         />
 
         <SaveBadge status={ui.saveStatus} />
 
         <button
-          onClick={() => router.push(`/dashboard/cv/${id}/preview`)}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 text-white text-xs font-medium hover:bg-white/15 transition-colors"
+          onClick={() => leave("/dashboard")}
+          className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-white/60 hover:text-white hover:bg-white/5 transition-colors text-xs font-medium shrink-0"
+        >
+          <LayoutDashboard size={13} />
+          Dashboard
+        </button>
+
+        <button
+          onClick={() => leave(`/dashboard/cv/${id}/preview`)}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/10 text-white text-xs font-medium hover:bg-white/15 transition-colors shrink-0"
         >
           <Eye size={13} />
           Preview

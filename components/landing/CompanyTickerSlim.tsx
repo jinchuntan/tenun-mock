@@ -29,9 +29,13 @@ export function CompanyTickerSlim() {
 
           <div className="hidden sm:block h-6 w-px bg-beige-300/70 shrink-0" />
 
-          {/* Scrolling company pills */}
+          {/* Scrolling company pills — slowed to a calm 60s loop; the base
+              .animate-marquee:hover rule pauses it on hover (no `no-pause` here). */}
           <div className="relative flex-1 overflow-hidden fade-x-mask">
-            <div className="flex w-max animate-marquee no-pause items-center py-1.5">
+            <div
+              className="flex w-max animate-marquee items-center py-1.5"
+              style={{ animationDuration: "60s" }}
+            >
               {ITEMS.map((company, i) => (
                 <Link
                   key={`${company.slug}-${i}`}

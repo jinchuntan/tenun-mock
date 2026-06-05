@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useRef, Suspense } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   FileText, Palette, Upload, PenLine, ChevronRight, ChevronLeft, Loader2,
-  Sparkles, Paperclip, AlertCircle,
+  Sparkles, Paperclip, AlertCircle, Check,
 } from "lucide-react";
 import { useAppDispatch } from "@/store/hooks";
 import { initCV, loadBlocks } from "@/store/slices/cvSlice";
@@ -12,9 +13,58 @@ import type { CVStyle, CVFormat, CVBlock } from "@/lib/cv-types";
 import { DEFAULT_BLOCK_CONTENT, DEFAULT_BLOCK_ORDER, newId } from "@/lib/cv-types";
 import { createCVInSupabase } from "@/lib/cv-persist";
 import { buildBlocksFromGenerated } from "@/lib/cv-generate";
+import { AppTopBar } from "@/components/layout/AppTopBar";
 
 type Step = "format" | "style" | "job" | "start";
 const STEPS: Step[] = ["format", "style", "job", "start"];
+const STEP_LABELS = ["Format", "Style", "Target Role", "Start"];
+
+// Labeled stepper — replaces the old anonymous dots so users always know which
+// stage of the wizard they're on.
+function StepIndicator({ currentIdx }: { currentIdx: number }) {
+  return (
+    <div className="mb-6">
+      <ol className="flex items-center">
+        {STEP_LABELS.map((label, i) => {
+          const done = i < currentIdx;
+          const current = i === currentIdx;
+          const isLast = i === STEP_LABELS.length - 1;
+          return (
+            <li key={label} className={isLast ? "flex items-center" : "flex items-center flex-1"}>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <span
+                  className={[
+                    "flex items-center justify-center w-6 h-6 rounded-full text-[11px] font-bold transition-colors",
+                    current ? "bg-[#0a1628] text-white"
+                      : done ? "bg-[#d4a017] text-[#0a1628]"
+                      : "bg-beige-200 text-navy-400",
+                  ].join(" ")}
+                >
+                  {done ? <Check size={13} /> : i + 1}
+                </span>
+                <span
+                  className={[
+                    "hidden sm:inline text-xs font-medium whitespace-nowrap transition-colors",
+                    current ? "text-navy-900" : done ? "text-navy-700" : "text-navy-400",
+                  ].join(" ")}
+                >
+                  {label}
+                </span>
+              </div>
+              {!isLast && (
+                <span className={["flex-1 h-px mx-2", done ? "bg-[#d4a017]" : "bg-beige-300"].join(" ")} />
+              )}
+            </li>
+          );
+        })}
+      </ol>
+      <p className="sm:hidden text-center text-[11px] text-navy-500 mt-2">
+        Step {currentIdx + 1} of {STEP_LABELS.length} ·{" "}
+        <span className="font-semibold text-navy-700">{STEP_LABELS[currentIdx]}</span>
+      </p>
+    </div>
+  );
+}
 
 function makeBlock(type: CVBlock["type"]): CVBlock {
   return { id: newId(), type, content: { ...DEFAULT_BLOCK_CONTENT[type] } };
@@ -160,27 +210,37 @@ function NewCVFlow() {
   }
 
   return (
-    <div className="min-h-screen bg-[#f5f0e8] flex items-center justify-center p-4">
-      <div className="w-full max-w-lg">
-        {/* Step indicator */}
-        <div className="flex items-center gap-2 mb-8 justify-center">
-          {STEPS.map((s, i) => (
-            <div key={s} className="flex items-center gap-2">
-              <div
-                className={[
-                  "w-2 h-2 rounded-full transition-all",
-                  i === currentIdx
-                    ? "bg-[#0a1628] w-6"
-                    : i < currentIdx
-                    ? "bg-[#d4a017]"
-                    : "bg-gray-300",
-                ].join(" ")}
-              />
-            </div>
-          ))}
-        </div>
+    <div className="min-h-screen bg-[#f5f0e8]">
+      <AppTopBar
+        breadcrumbs={[
+          { label: "Dashboard", href: "/dashboard" },
+          { label: "CV Builder", href: "/dashboard/cv" },
+          { label: "New CV" },
+        ]}
+        actions={
+          <Link
+            href="/dashboard/cv"
+            className="inline-flex items-center gap-1.5 rounded-lg border border-beige-300 bg-white px-3 py-1.5 text-xs font-medium text-navy-700 hover:border-navy-300 transition-colors"
+          >
+            <ChevronLeft size={14} /> <span className="hidden sm:inline">Back to Your CVs</span>
+          </Link>
+        }
+        returnTo={{ href: "/dashboard", label: "Exit to Dashboard" }}
+      />
 
-        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+      <div className="flex items-start justify-center p-4 pt-8 sm:pt-10">
+        <div className="w-full max-w-lg">
+          {/* Intro */}
+          <div className="text-center mb-6">
+            <h1 className="font-display text-2xl text-navy-900">Create a new CV</h1>
+            <p className="text-sm text-navy-500 mt-1.5">
+              Create a CV from scratch, upload an existing one, or let Tenun generate a first draft.
+            </p>
+          </div>
+
+          <StepIndicator currentIdx={currentIdx} />
+
+          <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
           {/* Format step */}
           {step === "format" && (
             <StepLayout
@@ -376,6 +436,7 @@ function NewCVFlow() {
               </div>
             </StepLayout>
           )}
+          </div>
         </div>
       </div>
     </div>
