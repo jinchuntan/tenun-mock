@@ -20,7 +20,8 @@ export type RouteName =
   | "site-guide"
   | "generate-cv"
   | "cv-assistant"
-  | "improve-cv-block";
+  | "improve-cv-block"
+  | "mock-interview";
 
 export type GenerateJSONOptions = {
   routeName: RouteName;
@@ -80,6 +81,8 @@ function getOpenRouterModel(routeName: RouteName): string {
     case "cv-assistant":
     case "improve-cv-block":
       return process.env.OPENROUTER_MODEL_CV_ASSISTANT ?? DEFAULT_OPENROUTER_MODEL;
+    case "mock-interview":
+      return process.env.OPENROUTER_MODEL_MOCK_INTERVIEW ?? DEFAULT_OPENROUTER_MODEL;
     case "parse-resume":
     default:
       return process.env.OPENROUTER_MODEL_RESUME_PARSE ?? DEFAULT_OPENROUTER_MODEL;
@@ -269,6 +272,7 @@ export function getAIConfig() {
       siteGuide: getOpenRouterModel("site-guide"),
       cvGenerate: getOpenRouterModel("generate-cv"),
       cvAssistant: getOpenRouterModel("cv-assistant"),
+      mockInterview: getOpenRouterModel("mock-interview"),
     },
     groqModel: getGroqModel(),
     dataCollection: process.env.OPENROUTER_DATA_COLLECTION === "allow" ? "allow" : "deny",

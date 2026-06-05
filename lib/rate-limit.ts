@@ -20,6 +20,7 @@ const LIMITS: Record<string, { requests: number; window: string }> = {
   "job-intent":   { requests: 15, window: "1 m" },
   "job-detail":   { requests: 15, window: "1 m" },
   "site-guide":   { requests: 20, window: "1 m" },
+  "mock-interview": { requests: 20, window: "1 m" },
   default:        { requests: 30, window: "1 m" },
 };
 
