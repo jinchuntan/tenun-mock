@@ -85,7 +85,7 @@ function SortableBlock({
           onClick={(e) => { e.stopPropagation(); onMove(-1); }}
           disabled={isFirst}
           aria-label={`Move ${BLOCK_LABELS[block.type]} up`}
-          className="p-0.5 text-gray-300 hover:text-gray-600 disabled:opacity-30 disabled:hover:text-gray-300 transition-colors"
+          className="p-1 text-gray-300 hover:text-gray-600 disabled:opacity-30 disabled:hover:text-gray-300 transition-colors"
         >
           <ChevronUp size={13} />
         </button>
@@ -93,7 +93,7 @@ function SortableBlock({
           onClick={(e) => { e.stopPropagation(); onMove(1); }}
           disabled={isLast}
           aria-label={`Move ${BLOCK_LABELS[block.type]} down`}
-          className="p-0.5 text-gray-300 hover:text-gray-600 disabled:opacity-30 disabled:hover:text-gray-300 transition-colors"
+          className="p-1 text-gray-300 hover:text-gray-600 disabled:opacity-30 disabled:hover:text-gray-300 transition-colors"
         >
           <ChevronDown size={13} />
         </button>
@@ -143,6 +143,9 @@ export default function EditCVPage() {
   const { meta, blocks, ui } = useAppSelector((s) => s.cv);
   const [loading, setLoading] = useState(true);
   const [panelTab, setPanelTab] = useState<"edit" | "assistant">("edit");
+  // On small screens only one panel shows at a time (preview lives behind the
+  // header "Preview" button); on lg+ all columns are visible together.
+  const [mobileView, setMobileView] = useState<"sections" | "edit">("sections");
 
   useEffect(() => {
     const supabase = createClient();
@@ -268,10 +271,33 @@ export default function EditCVPage() {
         </button>
       </header>
 
-      {/* Three-column layout */}
+      {/* Mobile view switcher — preview stays behind the header "Preview" button */}
+      <div className="lg:hidden flex shrink-0 bg-white border-b border-gray-200">
+        {([["sections", "Sections"], ["edit", "Editor"]] as const).map(([key, label]) => (
+          <button
+            key={key}
+            onClick={() => setMobileView(key)}
+            className={[
+              "flex-1 py-2.5 text-xs font-semibold transition-colors",
+              mobileView === key
+                ? "text-[#0a1628] border-b-2 border-[#d4a017]"
+                : "text-gray-400 hover:text-gray-600",
+            ].join(" ")}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Responsive layout: stacked single-panel on mobile, three columns on lg+ */}
       <div className="flex flex-1 overflow-hidden">
         {/* Left: block palette + sorted list */}
-        <aside className="w-56 shrink-0 bg-white border-r border-gray-200 flex flex-col overflow-hidden">
+        <aside
+          className={[
+            mobileView === "sections" ? "flex" : "hidden",
+            "lg:flex w-full lg:w-56 shrink-0 bg-white lg:border-r border-gray-200 flex-col overflow-hidden",
+          ].join(" ")}
+        >
           <div className="p-3 border-b border-gray-100">
             <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Sections</p>
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
@@ -287,7 +313,7 @@ export default function EditCVPage() {
                         isActive={ui.activeBlockId === blockId}
                         isFirst={i === 0}
                         isLast={i === blocks.allIds.length - 1}
-                        onClick={() => dispatch(setActiveBlock(blockId))}
+                        onClick={() => { dispatch(setActiveBlock(blockId)); setMobileView("edit"); }}
                         onRemove={() => dispatch(removeBlock(blockId))}
                         onMove={(dir) => moveBlock(blockId, dir)}
                       />
@@ -316,15 +342,22 @@ export default function EditCVPage() {
           </div>
         </aside>
 
-        {/* Centre: live preview */}
-        <main className="flex-1 overflow-y-auto bg-gray-100 p-6">
-          <div className="w-[794px] min-w-0 mx-auto shadow-xl">
+        {/* Centre: live preview — desktop only; on smaller screens use the
+            header "Preview" button. min-w-0 + overflow-auto keeps the wide A4
+            page scrolling inside this pane instead of breaking the layout. */}
+        <main className="hidden lg:block flex-1 min-w-0 overflow-auto bg-gray-100 p-6">
+          <div className="w-[794px] mx-auto shadow-xl">
             <Template blocks={blocks.byId} allIds={blocks.allIds} />
           </div>
         </main>
 
         {/* Right: property panel with Edit / Assistant tabs */}
-        <aside className="w-72 shrink-0 bg-white border-l border-gray-200 flex flex-col overflow-hidden">
+        <aside
+          className={[
+            mobileView === "edit" ? "flex" : "hidden",
+            "lg:flex w-full lg:w-72 shrink-0 bg-white lg:border-l border-gray-200 flex-col overflow-hidden",
+          ].join(" ")}
+        >
           <div className="flex border-b border-gray-100 shrink-0">
             <button
               onClick={() => setPanelTab("edit")}
