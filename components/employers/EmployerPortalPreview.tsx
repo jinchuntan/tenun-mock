@@ -2,21 +2,26 @@
 
 import { motion } from "framer-motion";
 import { Users, Star, FolderCheck, Clock } from "lucide-react";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 
-const STATS = [
-  { label: "Matched candidates", value: "24", icon: Users, accent: "text-navy-700 bg-navy-50" },
-  { label: "Strong matches", value: "8", icon: Star, accent: "text-gold-700 bg-gold-50" },
-  { label: "Portfolio-ready", value: "5", icon: FolderCheck, accent: "text-emerald-700 bg-emerald-50" },
-  { label: "Needs review", value: "11", icon: Clock, accent: "text-navy-500 bg-beige-200" },
+const STAT_META = [
+  { value: "24", icon: Users, accent: "text-navy-700 bg-navy-50" },
+  { value: "8", icon: Star, accent: "text-gold-700 bg-gold-50" },
+  { value: "5", icon: FolderCheck, accent: "text-emerald-700 bg-emerald-50" },
+  { value: "11", icon: Clock, accent: "text-navy-500 bg-beige-200" },
 ];
 
-const CANDIDATES = [
-  { name: "Candidate A", fit: 86, skills: "SQL, Excel, dashboard project", interest: "Interested in banking" },
-  { name: "Candidate B", fit: 79, skills: "Python, research, analytics", interest: "Interested in consulting" },
-  { name: "Candidate C", fit: 74, skills: "Power BI, finance project", interest: "Interested in FMCG" },
+const CANDIDATE_META = [
+  { name: "Candidate A", fit: 86, skills: "SQL, Excel, dashboard project" },
+  { name: "Candidate B", fit: 79, skills: "Python, research, analytics" },
+  { name: "Candidate C", fit: 74, skills: "Power BI, finance project" },
 ];
 
 export function EmployerPortalPreview() {
+  const { dict } = useLanguage();
+  const p = dict.portalPreview;
+  const STATS = STAT_META.map((s, i) => ({ ...s, label: p.statLabels[i] }));
+  const CANDIDATES = CANDIDATE_META.map((c, i) => ({ ...c, interest: p.candidateInterests[i] }));
   return (
     <section id="portal-preview" className="py-16 md:py-24 bg-navy-900 relative overflow-hidden">
       <div className="absolute inset-0 dot-pattern opacity-[0.06] pointer-events-none" />
@@ -24,10 +29,10 @@ export function EmployerPortalPreview() {
       <div className="relative max-w-5xl mx-auto px-4 sm:px-6">
         <div className="text-center mb-12 max-w-2xl mx-auto">
           <h2 className="font-display text-3xl sm:text-4xl text-white leading-tight mb-3">
-            See the shortlist before you start screening.
+            {p.title}
           </h2>
           <p className="text-sm sm:text-base text-navy-200 leading-relaxed">
-            Preview candidate fit, portfolio readiness, and skill gaps in one place.
+            {p.subtitle}
           </p>
         </div>
 
@@ -51,12 +56,12 @@ export function EmployerPortalPreview() {
             {/* Role header */}
             <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
               <div>
-                <p className="text-xs font-semibold text-navy-400 uppercase tracking-wider mb-1">Open role</p>
-                <h3 className="text-xl font-bold text-navy-900">Data Analyst Intern</h3>
+                <p className="text-xs font-semibold text-navy-400 uppercase tracking-wider mb-1">{p.openRole}</p>
+                <h3 className="text-xl font-bold text-navy-900">{p.roleTitle}</h3>
               </div>
               <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1.5 text-xs font-semibold text-emerald-700">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                Matching live
+                {p.matchingLive}
               </span>
             </div>
 
@@ -91,7 +96,7 @@ export function EmployerPortalPreview() {
                     <p className="text-xs text-navy-500 truncate">{c.skills} · {c.interest}</p>
                   </div>
                   <div className="shrink-0 text-right w-24">
-                    <div className="text-sm font-bold text-navy-900">{c.fit}% fit</div>
+                    <div className="text-sm font-bold text-navy-900">{c.fit}{p.fitSuffix}</div>
                     <div className="mt-1 h-1.5 rounded-full bg-beige-200 overflow-hidden">
                       <div className="h-full rounded-full bg-gold-500" style={{ width: `${c.fit}%` }} />
                     </div>
@@ -103,7 +108,7 @@ export function EmployerPortalPreview() {
         </motion.div>
 
         <p className="text-center text-xs text-navy-400 mt-5">
-          Preview only — illustrative candidate data.
+          {p.note}
         </p>
       </div>
     </section>

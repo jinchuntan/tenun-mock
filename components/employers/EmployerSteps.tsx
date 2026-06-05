@@ -2,37 +2,25 @@
 
 import { motion } from "framer-motion";
 import { FilePlus2, Sparkles, ListChecks } from "lucide-react";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 
-const STEPS = [
-  {
-    icon: FilePlus2,
-    title: "Post the role once",
-    body: "Tell us the role, required skills, salary range, location, and what a strong candidate actually needs to show.",
-  },
-  {
-    icon: Sparkles,
-    title: "Tenun matches for intent and fit",
-    body: "We look beyond keywords by using candidate skills, interests, CV signals, portfolio evidence, and role readiness.",
-  },
-  {
-    icon: ListChecks,
-    title: "Review a warmer shortlist",
-    body: "See candidates who have already explored the role, understood the gaps, and prepared a stronger application.",
-  },
-];
+const STEP_ICONS = [FilePlus2, Sparkles, ListChecks];
 
 export function EmployerSteps() {
+  const { dict } = useLanguage();
+  const s = dict.employerSteps;
+  const STEPS = s.steps.map((step, i) => ({ ...step, icon: STEP_ICONS[i] }));
   return (
     <section id="how-it-works" className="py-16 md:py-24">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <div className="text-center mb-12">
           <p className="text-xs font-semibold text-gold-600 uppercase tracking-widest mb-2">
-            Simple. Faster. Better signal.
+            {s.eyebrow}
           </p>
           <h2 className="font-display text-3xl sm:text-4xl text-navy-900 leading-tight">
-            From open role to warm
+            {s.titleLine1}
             <br className="hidden sm:block" />{" "}
-            shortlist in 3 steps.
+            {s.titleLine2}
           </h2>
         </div>
 

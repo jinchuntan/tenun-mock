@@ -3,9 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { CheckCircle2, Loader2 } from "lucide-react";
-
-const HIRING_TYPES = ["Internship", "Graduate role", "Entry-level", "Project-based"];
-const PRIORITIES = ["Skills", "Portfolio", "Culture fit", "Availability", "Salary fit"];
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 
 interface EmployerFormProps {
   roleTitle: string;
@@ -26,13 +24,17 @@ const EMPTY: Fields = {
   name: "",
   email: "",
   role: "",
-  hiringType: HIRING_TYPES[0],
+  hiringType: "",
   location: "",
   description: "",
 };
 
 export function EmployerForm({ roleTitle }: EmployerFormProps) {
-  const [fields, setFields] = useState<Fields>(EMPTY);
+  const { dict } = useLanguage();
+  const ef = dict.employerForm;
+  const HIRING_TYPES = ef.hiringTypes;
+  const PRIORITIES = ef.priorities;
+  const [fields, setFields] = useState<Fields>(() => ({ ...EMPTY, hiringType: HIRING_TYPES[0] }));
   const [priorities, setPriorities] = useState<string[]>([]);
   const [errors, setErrors] = useState<Partial<Record<keyof Fields, string>>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -53,11 +55,11 @@ export function EmployerForm({ roleTitle }: EmployerFormProps) {
 
   const validate = (): boolean => {
     const next: Partial<Record<keyof Fields, string>> = {};
-    if (!fields.company.trim()) next.company = "Company name is required.";
-    if (!fields.name.trim()) next.name = "Your name is required.";
-    if (!fields.email.trim()) next.email = "Work email is required.";
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fields.email)) next.email = "Enter a valid email.";
-    if (!fields.role.trim()) next.role = "Role title is required.";
+    if (!fields.company.trim()) next.company = ef.errCompany;
+    if (!fields.name.trim()) next.name = ef.errName;
+    if (!fields.email.trim()) next.email = ef.errEmail;
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(fields.email)) next.email = ef.errEmailInvalid;
+    if (!fields.role.trim()) next.role = ef.errRole;
     setErrors(next);
     return Object.keys(next).length === 0;
   };
@@ -91,11 +93,10 @@ export function EmployerForm({ roleTitle }: EmployerFormProps) {
       <div className="max-w-2xl mx-auto px-4 sm:px-6">
         <div className="text-center mb-10">
           <h2 className="font-display text-3xl sm:text-4xl text-navy-900 leading-tight mb-3">
-            Start with one role. We&apos;ll help you find better-fit early talent.
+            {ef.title}
           </h2>
           <p className="text-sm sm:text-base text-navy-600 leading-relaxed">
-            Submit your hiring need and we&apos;ll help you understand what kind of
-            candidates Tenun can surface.
+            {ef.subtitle}
           </p>
         </div>
 
@@ -108,9 +109,9 @@ export function EmployerForm({ roleTitle }: EmployerFormProps) {
             <div className="w-14 h-14 rounded-full bg-emerald-50 flex items-center justify-center mx-auto mb-4">
               <CheckCircle2 className="w-7 h-7 text-emerald-600" />
             </div>
-            <h3 className="text-lg font-bold text-navy-900 mb-2">Thanks — we&apos;ve received your role.</h3>
+            <h3 className="text-lg font-bold text-navy-900 mb-2">{ef.successTitle}</h3>
             <p className="text-sm text-navy-600 max-w-md mx-auto">
-              The Tenun team will review it and follow up soon.
+              {ef.successBody}
             </p>
           </motion.div>
         ) : (
@@ -121,58 +122,58 @@ export function EmployerForm({ roleTitle }: EmployerFormProps) {
           >
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className={labelCls} htmlFor="ef-company">Company name *</label>
+                <label className={labelCls} htmlFor="ef-company">{ef.company} *</label>
                 <input id="ef-company" className={inputCls} value={fields.company}
-                  onChange={(e) => set("company", e.target.value)} placeholder="e.g. Acme Sdn Bhd" />
+                  onChange={(e) => set("company", e.target.value)} placeholder={ef.companyPlaceholder} />
                 {errors.company && <p className="text-xs text-red-600 mt-1">{errors.company}</p>}
               </div>
               <div>
-                <label className={labelCls} htmlFor="ef-name">Your name *</label>
+                <label className={labelCls} htmlFor="ef-name">{ef.name} *</label>
                 <input id="ef-name" className={inputCls} value={fields.name}
-                  onChange={(e) => set("name", e.target.value)} placeholder="e.g. Aisha Lim" />
+                  onChange={(e) => set("name", e.target.value)} placeholder={ef.namePlaceholder} />
                 {errors.name && <p className="text-xs text-red-600 mt-1">{errors.name}</p>}
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className={labelCls} htmlFor="ef-email">Work email *</label>
+                <label className={labelCls} htmlFor="ef-email">{ef.email} *</label>
                 <input id="ef-email" type="email" className={inputCls} value={fields.email}
-                  onChange={(e) => set("email", e.target.value)} placeholder="you@company.com" />
+                  onChange={(e) => set("email", e.target.value)} placeholder={ef.emailPlaceholder} />
                 {errors.email && <p className="text-xs text-red-600 mt-1">{errors.email}</p>}
               </div>
               <div>
-                <label className={labelCls} htmlFor="ef-role">Role title *</label>
+                <label className={labelCls} htmlFor="ef-role">{ef.role} *</label>
                 <input id="ef-role" className={inputCls} value={fields.role}
-                  onChange={(e) => set("role", e.target.value)} placeholder="e.g. Data Analyst Intern" />
+                  onChange={(e) => set("role", e.target.value)} placeholder={ef.rolePlaceholder} />
                 {errors.role && <p className="text-xs text-red-600 mt-1">{errors.role}</p>}
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className={labelCls} htmlFor="ef-type">Hiring type</label>
+                <label className={labelCls} htmlFor="ef-type">{ef.hiringTypeLabel}</label>
                 <select id="ef-type" className={inputCls} value={fields.hiringType}
                   onChange={(e) => set("hiringType", e.target.value)}>
                   {HIRING_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
                 </select>
               </div>
               <div>
-                <label className={labelCls} htmlFor="ef-location">Location</label>
+                <label className={labelCls} htmlFor="ef-location">{ef.location}</label>
                 <input id="ef-location" className={inputCls} value={fields.location}
-                  onChange={(e) => set("location", e.target.value)} placeholder="e.g. Kuala Lumpur / Remote" />
+                  onChange={(e) => set("location", e.target.value)} placeholder={ef.locationPlaceholder} />
               </div>
             </div>
 
             <div>
-              <label className={labelCls} htmlFor="ef-desc">Short role description</label>
+              <label className={labelCls} htmlFor="ef-desc">{ef.description}</label>
               <textarea id="ef-desc" rows={3} className={`${inputCls} resize-none`} value={fields.description}
                 onChange={(e) => set("description", e.target.value)}
-                placeholder="What will this person work on, and what does a strong candidate need to show?" />
+                placeholder={ef.descriptionPlaceholder} />
             </div>
 
             <div>
-              <span className={labelCls}>What matters most?</span>
+              <span className={labelCls}>{ef.prioritiesLabel}</span>
               <div className="flex flex-wrap gap-2">
                 {PRIORITIES.map((p) => {
                   const active = priorities.includes(p);
@@ -201,7 +202,7 @@ export function EmployerForm({ roleTitle }: EmployerFormProps) {
               disabled={submitting}
               className="w-full flex items-center justify-center gap-2 px-6 py-3.5 rounded-full bg-gold-500 text-navy-900 text-sm font-bold hover:bg-gold-400 disabled:opacity-60 transition-all shadow-lg shadow-gold-500/20"
             >
-              {submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> Submitting...</> : "Submit role for matching"}
+              {submitting ? <><Loader2 className="w-4 h-4 animate-spin" /> {ef.submitting}</> : ef.submit}
             </button>
           </form>
         )}

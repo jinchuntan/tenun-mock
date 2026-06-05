@@ -4,27 +4,15 @@ import { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { ArrowUpRight, ChevronLeft, ChevronRight } from "lucide-react";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 
-const FEATURES = [
-  {
-    title: "Job discovery, not just job search",
-    body: "Type what you enjoy. Get 6 real job titles you may not have known existed, each with salary ranges, day-to-day breakdowns, and required skills.",
-    image: "/images/landing/dog-image.png",
-    alt: "Tenun mascot puppy exploring careers",
-  },
-  {
-    title: "The secret sauce, not just job descriptions",
-    body: "Learn what actually separates candidates who get hired from those who don't, for every role you explore. No generic advice.",
-    image: "/images/landing/frog-image.png",
-    alt: "Tenun mascot frog graduate thinking it through",
-  },
-  {
-    title: "Your path, not just a list",
-    body: "Upload your CV and see what to improve, what to build, and how to position yourself for the roles you actually want.",
-    image: "/images/landing/can-image.png",
-    alt: "Tenun graduation-cap mascot striding ahead",
-  },
+const FEATURE_MEDIA = [
+  { image: "/images/landing/dog-image.png", alt: "Tenun mascot puppy exploring careers" },
+  { image: "/images/landing/frog-image.png", alt: "Tenun mascot frog graduate thinking it through" },
+  { image: "/images/landing/can-image.png", alt: "Tenun graduation-cap mascot striding ahead" },
 ];
+
+const FEATURES_LEN = FEATURE_MEDIA.length;
 
 const AUTO_ROTATE_MS = 4000;
 
@@ -38,24 +26,28 @@ const SLOTS = {
 type SlotName = keyof typeof SLOTS;
 
 function slotFor(index: number, active: number): SlotName {
-  const rel = (index - active + FEATURES.length) % FEATURES.length;
+  const rel = (index - active + FEATURES_LEN) % FEATURES_LEN;
   if (rel === 0) return "center";
   return rel === 1 ? "right" : "left";
 }
 
 export function WeaverFeaturesSection() {
+  const { dict } = useLanguage();
+  const f = dict.weaverFeatures;
+  const FEATURES = f.cards.map((card, i) => ({ ...card, ...FEATURE_MEDIA[i] }));
+
   const [active, setActive] = useState(0);
   // Ref (not state) so pausing never tears down the interval
   const pausedRef = useRef(false);
 
   // "Forward" = the left card slides into the centre (matches the brief)
-  const goNext = () => setActive((a) => (a - 1 + FEATURES.length) % FEATURES.length);
-  const goPrev = () => setActive((a) => (a + 1) % FEATURES.length);
+  const goNext = () => setActive((a) => (a - 1 + FEATURES_LEN) % FEATURES_LEN);
+  const goPrev = () => setActive((a) => (a + 1) % FEATURES_LEN);
 
   useEffect(() => {
     const id = setInterval(() => {
       if (!pausedRef.current) {
-        setActive((a) => (a - 1 + FEATURES.length) % FEATURES.length);
+        setActive((a) => (a - 1 + FEATURES_LEN) % FEATURES_LEN);
       }
     }, AUTO_ROTATE_MS);
     return () => clearInterval(id);
@@ -70,13 +62,12 @@ export function WeaverFeaturesSection() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center">
           {/* Left headline */}
           <div className="lg:col-span-5">
-            <p className="text-sm font-semibold text-navy-500 mb-3">For Weavers.</p>
+            <p className="text-sm font-semibold text-navy-500 mb-3">{f.eyebrow}</p>
             <h2 className="font-display text-3xl sm:text-4xl text-navy-900 leading-[1.05] mb-6">
-              Built for people who don&apos;t know their job title yet.
+              {f.title}
             </h2>
             <p className="text-sm text-navy-600 leading-relaxed underline decoration-gold-400 decoration-2 underline-offset-4 max-w-sm mb-8">
-              Most platforms expect you to already know what you want. Tenun starts
-              from where you actually are.
+              {f.subtitle}
             </p>
 
             {/* Manual navigation */}
@@ -84,7 +75,7 @@ export function WeaverFeaturesSection() {
               <button
                 type="button"
                 onClick={goPrev}
-                aria-label="Previous feature"
+                aria-label={f.prev}
                 className="flex items-center justify-center w-10 h-10 rounded-full border border-beige-300 bg-white text-navy-700 hover:border-gold-400 hover:text-gold-600 hover:-translate-y-0.5 active:translate-y-0 transition-all shadow-sm"
               >
                 <ChevronLeft className="w-5 h-5" />
@@ -92,7 +83,7 @@ export function WeaverFeaturesSection() {
               <button
                 type="button"
                 onClick={goNext}
-                aria-label="Next feature"
+                aria-label={f.next}
                 className="flex items-center justify-center w-10 h-10 rounded-full border border-beige-300 bg-white text-navy-700 hover:border-gold-400 hover:text-gold-600 hover:-translate-y-0.5 active:translate-y-0 transition-all shadow-sm"
               >
                 <ChevronRight className="w-5 h-5" />

@@ -2,23 +2,28 @@
 
 import React from "react";
 import Link from "next/link";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 
-const WEAVER_LINKS = [
-  { label: "How it works", href: "/#how-it-works" },
-  { label: "Career discovery", href: "/" },
-  { label: "Build CV", href: "/profile?upload=true&from=landing" },
-  { label: "FAQ", href: "/#faq" },
+const WEAVER_HREFS = [
+  "/#how-it-works",
+  "/",
+  "/profile?upload=true&from=landing",
+  "/#faq",
 ];
 
-const EMPLOYER_LINKS = [
-  { label: "Why Tenun?", href: "/employers#why" },
-  { label: "Post a role", href: "/employers#employer-form" },
-  { label: "Candidate matching", href: "/employers#candidate-signal" },
-  { label: "Recruiter preview", href: "/employers#portal-preview" },
+const EMPLOYER_HREFS = [
+  "/employers#why",
+  "/employers#employer-form",
+  "/employers#candidate-signal",
+  "/employers#portal-preview",
 ];
 
 export function Footer() {
+  const { dict } = useLanguage();
+  const ft = dict.footer;
   const currentYear = new Date().getFullYear();
+  const WEAVER_LINKS = ft.weaverLinks.map((label, i) => ({ label, href: WEAVER_HREFS[i] }));
+  const EMPLOYER_LINKS = ft.employerLinks.map((label, i) => ({ label, href: EMPLOYER_HREFS[i] }));
 
   return (
     <footer className="bg-beige-200 border-t border-beige-300/70 text-navy-900">
@@ -28,15 +33,13 @@ export function Footer() {
           <div className="md:col-span-2">
             <span className="text-2xl font-black tracking-tight">Tenun</span>
             <p className="text-navy-600 text-sm max-w-sm leading-relaxed mt-4">
-              Career discovery for students and fresh graduates who don&apos;t know
-              their job title yet. Built with TalentBank, Malaysia&apos;s leading
-              talent placement platform.
+              {ft.tagline}
             </p>
           </div>
 
           {/* For Weavers */}
           <div>
-            <h4 className="font-bold text-sm mb-4 text-navy-900">For Weavers</h4>
+            <h4 className="font-bold text-sm mb-4 text-navy-900">{ft.forWeavers}</h4>
             <ul className="space-y-2.5 text-sm text-navy-600">
               {WEAVER_LINKS.map((link) => (
                 <li key={link.label}>
@@ -50,7 +53,7 @@ export function Footer() {
 
           {/* For Employers */}
           <div>
-            <h4 className="font-bold text-sm mb-4 text-navy-900">For Employers</h4>
+            <h4 className="font-bold text-sm mb-4 text-navy-900">{ft.forEmployers}</h4>
             <ul className="space-y-2.5 text-sm text-navy-600">
               {EMPLOYER_LINKS.map((link) =>
                 link.href.startsWith("mailto:") ? (
@@ -73,10 +76,10 @@ export function Footer() {
 
         <div className="border-t border-beige-300/80 mt-10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p className="text-xs text-navy-500">
-            &copy; {currentYear} Tenun. All rights reserved.
+            &copy; {currentYear} Tenun. {ft.rights}
           </p>
           <p className="text-xs text-navy-500">
-            Tenun helps you explore possibilities. It does not guarantee employment outcomes.
+            {ft.disclaimer}
           </p>
         </div>
       </div>

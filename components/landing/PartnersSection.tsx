@@ -4,24 +4,26 @@ import Image from "next/image";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { companies } from "@/lib/data/company-jobs";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 
 const ITEMS = [...companies, ...companies];
 
 export function PartnersSection() {
+  const { dict } = useLanguage();
+  const p = dict.partners;
   return (
     <section id="partners" className="py-16 md:py-20 bg-beige-100/60 border-y border-beige-300/50">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center mb-10">
         <p className="text-xs font-semibold text-gold-600 uppercase tracking-widest mb-2">
-          Our proven partners.
+          {p.eyebrow}
         </p>
         <h2 className="font-display text-2xl sm:text-3xl text-navy-900 leading-tight mb-3">
-          We partner with the companies
+          {p.titleLine1}
           <br className="hidden sm:block" />{" "}
-          you want to work for.
+          {p.titleLine2}
         </h2>
         <p className="text-sm text-navy-600 leading-relaxed max-w-xl mx-auto">
-          Every candidate is vetted by Tenun before being recommended, so partners
-          know you&apos;re more than just another application.
+          {p.subtitle}
         </p>
       </div>
 
@@ -54,7 +56,7 @@ export function PartnersSection() {
           href={`/companies/${companies[0]?.slug ?? ""}`}
           className="inline-flex items-center gap-1.5 text-sm font-semibold text-navy-800 hover:text-gold-600 transition-colors"
         >
-          Browse all companies <ChevronRight className="w-4 h-4" />
+          {p.browseAll} <ChevronRight className="w-4 h-4" />
         </Link>
       </div>
     </section>

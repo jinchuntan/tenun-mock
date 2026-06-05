@@ -3,29 +3,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown } from "lucide-react";
-
-const FAQ_ITEMS = [
-  {
-    q: "Is Tenun just another job board?",
-    a: "No. Tenun helps candidates understand roles before they apply, so employers receive more context-rich applications rather than cold CVs.",
-  },
-  {
-    q: "Can we post internships and graduate roles?",
-    a: "Yes. Tenun is especially useful for internships, graduate programmes, entry-level roles, and project-based early-career hiring.",
-  },
-  {
-    q: "How does matching work?",
-    a: "Tenun uses candidate profile data, skills, interests, CV signals, portfolio evidence, and role expectations to surface stronger-fit candidates.",
-  },
-  {
-    q: "Do we get access to full candidate details?",
-    a: "For the MVP, employers can request access to shortlisted candidates after submitting a role. A full recruiter portal can be added later.",
-  },
-  {
-    q: "Can this support campus hiring?",
-    a: "Yes. Tenun is designed for students and fresh graduates, so it works well for campus hiring, graduate roles, and early-career pipelines.",
-  },
-];
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 
 function FAQItem({
   item, isOpen, onToggle,
@@ -64,6 +42,8 @@ function FAQItem({
 }
 
 export function EmployerFAQ() {
+  const { dict } = useLanguage();
+  const FAQ_ITEMS = dict.employerFaq.items;
   const [open, setOpen] = useState<Set<number>>(new Set([0]));
 
   const toggle = (i: number) =>
@@ -84,9 +64,9 @@ export function EmployerFAQ() {
     <section id="employer-faq" className="py-16 md:py-24">
       <div className="max-w-5xl mx-auto px-4 sm:px-6">
         <div className="text-center mb-12">
-          <p className="text-xs font-semibold text-gold-600 uppercase tracking-widest mb-2">FAQ</p>
+          <p className="text-xs font-semibold text-gold-600 uppercase tracking-widest mb-2">{dict.employerFaq.eyebrow}</p>
           <h2 className="font-display text-3xl sm:text-4xl text-navy-900">
-            Questions employers ask us.
+            {dict.employerFaq.title}
           </h2>
         </div>
 

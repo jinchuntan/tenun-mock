@@ -2,33 +2,22 @@
 
 import { motion } from "framer-motion";
 import { X, Check } from "lucide-react";
-
-const JOB_BOARDS = [
-  "Many cold applicants",
-  "Keyword-heavy CVs",
-  "Candidates apply blindly",
-  "Recruiters screen manually",
-  "Weak signal on motivation and fit",
-];
-
-const TENUN = [
-  "Smaller, warmer shortlist",
-  "Skill, interest, and role-fit context",
-  "Candidates understand the role before applying",
-  "Candidate signals are structured before review",
-  "Better visibility into readiness and gaps",
-];
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 
 export function ComparisonSection() {
+  const { dict } = useLanguage();
+  const c = dict.comparison;
+  const JOB_BOARDS = c.jobBoards;
+  const TENUN = c.tenun;
   return (
     <section id="why" className="py-16 md:py-24">
       <div className="max-w-5xl mx-auto px-4 sm:px-6">
         <div className="text-center mb-12 max-w-2xl mx-auto">
           <h2 className="font-display text-3xl sm:text-4xl text-navy-900 leading-tight mb-3">
-            Why Tenun, not just another job board?
+            {c.title}
           </h2>
           <p className="text-sm sm:text-base text-navy-600 leading-relaxed">
-            Traditional job boards give you volume. Tenun gives you context.
+            {c.subtitle}
           </p>
         </div>
 
@@ -41,7 +30,7 @@ export function ComparisonSection() {
             transition={{ duration: 0.45 }}
             className="rounded-3xl bg-beige-100 border border-beige-300/60 p-6 sm:p-7"
           >
-            <h3 className="text-sm font-semibold text-navy-500 mb-5">Traditional job boards</h3>
+            <h3 className="text-sm font-semibold text-navy-500 mb-5">{c.jobBoardsTitle}</h3>
             <ul className="space-y-3.5">
               {JOB_BOARDS.map((item) => (
                 <li key={item} className="flex items-start gap-3 text-sm text-navy-600">

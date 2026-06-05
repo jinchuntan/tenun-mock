@@ -15,15 +15,7 @@ import { CVSupportSection } from "@/components/landing/CVSupportSection";
 import { FAQSection } from "@/components/landing/FAQSection";
 import { JobIntentResult, JobSuggestion } from "@/lib/types";
 import { slugify } from "@/lib/utils";
-
-const EXAMPLE_QUERIES = [
-  "I want to build mobile apps",
-  "I like working with data and numbers",
-  "I want to do 3D animations",
-  "I like designing user interfaces",
-  "I want to help people with money",
-  "I'm into AI and machine learning",
-];
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 
 // Single word with no spaces = likely generic query (e.g. "programmer", "designer")
 const isGenericQuery = (q: string) => q.trim().length > 0 && !q.trim().includes(" ");
@@ -31,6 +23,9 @@ const isGenericQuery = (q: string) => q.trim().length > 0 && !q.trim().includes(
 export default function HomePage() {
   const router = useRouter();
   const resultsRef = useRef<HTMLDivElement>(null);
+  const { dict, locale } = useLanguage();
+  const h = dict.home;
+  const EXAMPLE_QUERIES = h.exampleQueries;
 
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
@@ -50,16 +45,16 @@ export default function HomePage() {
       const res = await fetch("/api/job-intent", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: searchQuery }),
+        body: JSON.stringify({ query: searchQuery, locale }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to get suggestions.");
+      if (!res.ok) throw new Error(data.error || h.errorFailed);
       setResult(data as JobIntentResult);
       setTimeout(() => {
         resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       }, 100);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong.");
+      setError(err instanceof Error ? err.message : h.errorGeneric);
     } finally {
       setLoading(false);
     }
@@ -98,7 +93,7 @@ export default function HomePage() {
                 className="max-w-3xl mx-auto px-4 sm:px-6 mb-8"
               >
                 <div className="rounded-2xl border border-red-200 bg-red-50 p-4 text-center">
-                  <p className="text-sm font-semibold text-red-700 mb-1">Something went wrong</p>
+                  <p className="text-sm font-semibold text-red-700 mb-1">{h.errorTitle}</p>
                   <p className="text-xs text-red-600">{error}</p>
                 </div>
               </motion.div>
@@ -138,9 +133,9 @@ export default function HomePage() {
                     animate={{ opacity: 1, y: 0 }}
                     className="text-center py-12"
                   >
-                    <p className="text-navy-900 font-semibold mb-2">We couldn&apos;t pin down specific roles for that.</p>
+                    <p className="text-navy-900 font-semibold mb-2">{h.emptyTitle}</p>
                     <p className="text-sm text-navy-500 mb-6 max-w-sm mx-auto">
-                      Try describing what you actually enjoy doing. The more specific, the better the match.
+                      {h.emptyBody}
                     </p>
                     <div className="flex flex-wrap justify-center gap-2">
                       {EXAMPLE_QUERIES.map((q) => (
@@ -166,7 +161,7 @@ export default function HomePage() {
                         className="mb-5 p-4 rounded-2xl bg-gold-50 border border-gold-200"
                       >
                         <p className="text-xs font-semibold text-gold-700 mb-2">
-                          &ldquo;{query}&rdquo; is broad. Want more specific results? Try:
+                          &ldquo;{query}&rdquo; {h.broadPrefix}
                         </p>
                         <div className="flex flex-wrap gap-2">
                           {result.didYouMean.map((term) => (
@@ -191,14 +186,14 @@ export default function HomePage() {
                         <div className="flex items-center gap-2 mb-2">
                           <Sparkles className="w-4 h-4 text-gold-500" />
                           <h2 className="text-xs font-semibold text-navy-500 uppercase tracking-wide">
-                            Career space overview
+                            {h.overviewLabel}
                           </h2>
                         </div>
                         <p className="text-sm text-navy-700 leading-relaxed">{result.overview}</p>
                         {/* Only show didYouMean inside overview box for descriptive queries */}
                         {!isGenericQuery(query) && result.didYouMean?.length > 0 && (
                           <div className="mt-3 flex flex-wrap gap-2">
-                            <span className="text-xs text-navy-400 self-center">Also explore:</span>
+                            <span className="text-xs text-navy-400 self-center">{h.alsoExplore}</span>
                             {result.didYouMean.map((term) => (
                               <button
                                 key={term}
@@ -214,7 +209,7 @@ export default function HomePage() {
                     )}
 
                     <h2 className="text-sm font-medium text-navy-500 mb-3">
-                      6 roles that match &ldquo;{query}&rdquo;. Click any to see what it takes.
+                      {h.resultsHeadingPrefix} &ldquo;{query}&rdquo;{h.resultsHeadingSuffix}
                     </h2>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">

@@ -11,6 +11,7 @@ import {
 } from "framer-motion";
 import { Sparkles, Send, X, ArrowUpRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 
 /**
  * Tenun Guide — a floating mascot chatbot that helps users figure out where to
@@ -46,67 +47,16 @@ function getSupportEmail(): string {
   return fromEnv && fromEnv.length > 0 ? fromEnv : "support@tenun.example";
 }
 
-/** Page-specific greeting + starting quick actions, keyed off the pathname. */
-function getPageConfig(pathname: string): {
-  greeting: string;
-  quickActions: string[];
-} {
-  if (pathname === "/" || pathname === "") {
-    return {
-      greeting:
-        "Hi, I'm your Tenun guide! Tell me what you're trying to do, or I can help you start with career search.",
-      quickActions: ["How do I start?", "What should I type?", "Build my CV"],
-    };
-  }
-  if (pathname.startsWith("/jobs/")) {
-    return {
-      greeting:
-        "Looking at a role? I can break down what it means and how to tell if it fits you.",
-      quickActions: [
-        "What does this role mean?",
-        "How do I know if I fit?",
-        "Build my CV for this role",
-      ],
-    };
-  }
-  if (pathname.startsWith("/profile")) {
-    return {
-      greeting:
-        "You're on the profile page. I can help you upload your CV, fill this manually, or understand what happens next.",
-      quickActions: [
-        "How do I upload my CV?",
-        "Can I fill this manually?",
-        "What happens after this?",
-      ],
-    };
-  }
-  if (pathname.startsWith("/dashboard")) {
-    return {
-      greeting:
-        "Welcome to your dashboard! I can help you make sense of what you're seeing or get your CV going.",
-      quickActions: [
-        "What am I looking at?",
-        "Where is my skill gap?",
-        "Upload CV / Portfolio",
-      ],
-    };
-  }
-  if (pathname.startsWith("/employers")) {
-    return {
-      greeting:
-        "You're on the employer page. I can help you post a role or understand how Tenun matches candidates.",
-      quickActions: [
-        "How do employers use Tenun?",
-        "How do I post a role?",
-        "Show candidate preview",
-      ],
-    };
-  }
-  return {
-    greeting:
-      "Hi, I'm your Tenun guide! Ask me where to go next and I'll point you the right way.",
-    quickActions: ["What is Tenun?", "How do I search careers?", "Build my CV"],
-  };
+type PageKey = "home" | "jobs" | "profile" | "dashboard" | "employers" | "default";
+
+/** Map the current pathname to a translation key for greeting + quick actions. */
+function pageKey(pathname: string): PageKey {
+  if (pathname === "/" || pathname === "") return "home";
+  if (pathname.startsWith("/jobs/")) return "jobs";
+  if (pathname.startsWith("/profile")) return "profile";
+  if (pathname.startsWith("/dashboard")) return "dashboard";
+  if (pathname.startsWith("/employers")) return "employers";
+  return "default";
 }
 
 let messageCounter = 0;
@@ -118,6 +68,8 @@ function nextId(): string {
 export default function TenunGuideWidget() {
   const pathname = usePathname() ?? "/";
   const prefersReducedMotion = useReducedMotion();
+  const { dict, locale } = useLanguage();
+  const guide = dict.guide;
 
   const [open, setOpen] = useState(false);
   const [showHint, setShowHint] = useState(false);
@@ -130,7 +82,9 @@ export default function TenunGuideWidget() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const pageConfig = useMemo(() => getPageConfig(pathname), [pathname]);
+  const key = useMemo(() => pageKey(pathname), [pathname]);
+  const greeting = guide.greetings[key];
+  const quickActions = guide.quickActions[key];
   const supportEmail = useMemo(() => getSupportEmail(), []);
 
   const hidden = useMemo(() => {
@@ -156,10 +110,10 @@ export default function TenunGuideWidget() {
   // Seed the page-specific greeting the first time the panel opens.
   useEffect(() => {
     if (open && !greeted) {
-      setMessages([{ id: nextId(), role: "assistant", content: pageConfig.greeting }]);
+      setMessages([{ id: nextId(), role: "assistant", content: greeting }]);
       setGreeted(true);
     }
-  }, [open, greeted, pageConfig.greeting]);
+  }, [open, greeted, greeting]);
 
   // Keep the latest message in view.
   useEffect(() => {
@@ -211,6 +165,7 @@ export default function TenunGuideWidget() {
           body: JSON.stringify({
             message: text,
             history,
+            locale,
             pageContext: {
               pathname,
               pageTitle: typeof document !== "undefined" ? document.title : undefined,
@@ -221,14 +176,14 @@ export default function TenunGuideWidget() {
         if (!res.ok) {
           const friendly =
             res.status === 429
-              ? "I'm getting a lot of questions right now — give me a moment and try again."
-              : `Something went wrong on my end. You can always reach the Tenun team at ${supportEmail}.`;
+              ? guide.rateLimited
+              : `${guide.errorWithEmail} ${supportEmail}.`;
           setMessages((prev) => [...prev, { id: nextId(), role: "assistant", content: friendly }]);
           return;
         }
 
         const data = (await res.json()) as GuideApiResponse;
-        let answer = data.answer || `I'm not fully sure about that yet. You can reach the Tenun team at ${supportEmail}.`;
+        let answer = data.answer || `${guide.cannotReach} ${supportEmail}.`;
         if (data.shouldEscalate && data.escalationMessage) {
           answer = `${answer}\n\n${data.escalationMessage}`;
         }
@@ -240,14 +195,14 @@ export default function TenunGuideWidget() {
           {
             id: nextId(),
             role: "assistant",
-            content: `I couldn't reach my brain just now. Please try again, or contact the Tenun team at ${supportEmail}.`,
+            content: `${guide.cannotReach} ${supportEmail}.`,
           },
         ]);
       } finally {
         setLoading(false);
       }
     },
-    [loading, messages, pathname, supportEmail]
+    [loading, messages, pathname, supportEmail, locale, guide]
   );
 
   const onSubmit = useCallback(
@@ -286,13 +241,13 @@ export default function TenunGuideWidget() {
                 <MascotImage size={36} />
               </span>
               <div className="min-w-0 flex-1">
-                <p className="font-display text-sm leading-tight">Tenun Guide</p>
-                <p className="text-xs text-beige-200/90">Ask me where to go next.</p>
+                <p className="font-display text-sm leading-tight">{guide.header}</p>
+                <p className="text-xs text-beige-200/90">{guide.subheader}</p>
               </div>
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                aria-label="Close Tenun Guide"
+                aria-label={guide.close}
                 className="rounded-full p-1.5 text-beige-200 transition hover:bg-navy-700 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-gold-400"
               >
                 <X className="h-4 w-4" aria-hidden="true" />
@@ -349,7 +304,7 @@ export default function TenunGuideWidget() {
             {/* Starter quick-action chips (only before the user has asked anything) */}
             {messages.length <= 1 && !loading && (
               <div className="flex flex-wrap gap-2 border-t border-beige-300/70 px-4 py-3">
-                {pageConfig.quickActions.map((q) => (
+                {quickActions.map((q) => (
                   <button
                     key={q}
                     type="button"
@@ -368,7 +323,7 @@ export default function TenunGuideWidget() {
               className="flex items-center gap-2 border-t border-beige-300/70 bg-beige-100/60 px-3 py-3"
             >
               <label htmlFor="tenun-guide-input" className="sr-only">
-                Message the Tenun Guide
+                {guide.header}
               </label>
               <input
                 id="tenun-guide-input"
@@ -376,14 +331,14 @@ export default function TenunGuideWidget() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 maxLength={MAX_MESSAGE_LENGTH}
-                placeholder="Ask me anything about Tenun…"
+                placeholder={guide.placeholder}
                 autoComplete="off"
                 className="flex-1 rounded-full border border-beige-300 bg-white px-4 py-2 text-sm text-navy-900 placeholder:text-navy-400 focus:border-gold-400 focus:outline-none focus:ring-2 focus:ring-gold-200"
               />
               <button
                 type="submit"
                 disabled={!input.trim() || loading}
-                aria-label="Send message"
+                aria-label={guide.send}
                 className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gold-500 text-navy-900 transition hover:bg-gold-400 disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-navy-700"
               >
                 <Send className="h-4 w-4" aria-hidden="true" />
@@ -404,7 +359,7 @@ export default function TenunGuideWidget() {
             exit={{ opacity: 0, y: 8 }}
             className="mr-1 rounded-2xl rounded-br-sm bg-navy-800 px-3 py-2 text-xs font-medium text-beige-50 shadow-lg ring-1 ring-navy-700"
           >
-            Need help? 👋
+            {guide.needHelp}
           </motion.button>
         )}
       </AnimatePresence>
@@ -414,7 +369,7 @@ export default function TenunGuideWidget() {
         <motion.button
           type="button"
           onClick={openPanel}
-          aria-label="Open Tenun Guide"
+          aria-label={guide.open}
           aria-expanded={open}
           animate={idleAnim}
           transition={

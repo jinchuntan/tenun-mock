@@ -11,6 +11,8 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import type { User } from "@supabase/supabase-js";
 import { WeaverMegaMenu } from "@/components/landing/WeaverMegaMenu";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
+import { LOCALE_LABEL, LOCALES, type Locale } from "@/lib/i18n";
 
 const WEAVERS_HREF = "/";
 const EMPLOYERS_HREF = "/employers";
@@ -51,7 +53,9 @@ export function Navbar() {
   const [user, setUser] = useState<User | null>(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [weaverOpen, setWeaverOpen] = useState(false);
+  const [langOpen, setLangOpen] = useState(false);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { locale, setLocale, dict } = useLanguage();
 
   useEffect(() => {
     const supabase = createClient();
@@ -65,7 +69,9 @@ export function Navbar() {
 
   // Close the mega menu on Escape
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setWeaverOpen(false);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { setWeaverOpen(false); setLangOpen(false); }
+    };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, []);
@@ -120,7 +126,7 @@ export function Navbar() {
                     : "text-navy-800 hover:bg-white/60",
                 ].join(" ")}
               >
-                For Weavers
+                {dict.nav.forWeavers}
                 <ChevronDown
                   className={`w-3.5 h-3.5 transition-transform duration-200 ${weaverOpen ? "rotate-180" : ""}`}
                 />
@@ -135,7 +141,7 @@ export function Navbar() {
                     : "text-navy-400 hover:text-navy-800 hover:bg-white/60",
                 ].join(" ")}
               >
-                For Employers
+                {dict.nav.forEmployers}
               </Link>
             </div>
 
@@ -157,14 +163,14 @@ export function Navbar() {
             <button
               type="button"
               onClick={() => router.push("/#faq")}
-              aria-label="Help & FAQ"
+              aria-label={dict.nav.helpFaq}
               className="p-2 rounded-full text-navy-700 hover:bg-beige-200/70 transition-colors"
             >
               <MessagesSquare className="w-[18px] h-[18px]" />
             </button>
             <button
               type="button"
-              aria-label="Notifications"
+              aria-label={dict.nav.notifications}
               className="relative p-2 rounded-full text-navy-700 hover:bg-beige-200/70 transition-colors"
             >
               <Bell className="w-[18px] h-[18px]" />
@@ -200,14 +206,14 @@ export function Navbar() {
                         className="flex items-center gap-2 px-3 py-2 text-sm text-navy-700 hover:bg-beige-100 transition-colors"
                       >
                         <LayoutDashboard className="w-4 h-4" />
-                        Dashboard
+                        {dict.nav.dashboard}
                       </Link>
                       <button
                         onClick={handleSignOut}
                         className="w-full flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
                       >
                         <LogOut className="w-4 h-4" />
-                        Sign out
+                        {dict.nav.signOut}
                       </button>
                     </motion.div>
                   )}
@@ -219,21 +225,60 @@ export function Navbar() {
                   href="/login"
                   className="px-4 py-2 rounded-full bg-navy-900 text-white text-sm font-semibold hover:bg-navy-800 transition-all"
                 >
-                  Sign In
+                  {dict.nav.signIn}
                 </Link>
                 <Link
                   href="/signup"
                   className="px-4 py-2 rounded-full border border-navy-300 text-navy-900 text-sm font-semibold hover:border-navy-900 hover:bg-white transition-all"
                 >
-                  Sign Up
+                  {dict.nav.signUp}
                 </Link>
               </div>
             )}
 
-            {/* Language */}
-            <div className="flex items-center gap-1 ml-1 pl-2 border-l border-beige-300/70 text-navy-600">
-              <span className="text-xs font-semibold">EN</span>
-              <Globe className="w-4 h-4" />
+            {/* Language switcher */}
+            <div className="relative ml-1 pl-2 border-l border-beige-300/70">
+              <button
+                type="button"
+                onClick={() => setLangOpen((o) => !o)}
+                aria-label={dict.nav.language}
+                aria-haspopup="menu"
+                aria-expanded={langOpen}
+                className="flex items-center gap-1 px-1.5 py-1 rounded-full text-navy-600 hover:bg-beige-200/70 transition-colors"
+              >
+                <span className="text-xs font-semibold">{LOCALE_LABEL[locale]}</span>
+                <Globe className="w-4 h-4" />
+              </button>
+              <AnimatePresence>
+                {langOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95, y: -4 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.95, y: -4 }}
+                    transition={{ duration: 0.12 }}
+                    role="menu"
+                    className="absolute right-0 mt-2 w-44 bg-white rounded-xl border border-beige-300/70 shadow-lg py-1 z-50"
+                  >
+                    {LOCALES.map((l) => (
+                      <button
+                        key={l}
+                        role="menuitemradio"
+                        aria-checked={locale === l}
+                        onClick={() => { setLocale(l); setLangOpen(false); }}
+                        className={[
+                          "w-full flex items-center justify-between gap-2 px-3 py-2 text-sm transition-colors",
+                          locale === l
+                            ? "text-navy-900 font-semibold bg-beige-100"
+                            : "text-navy-700 hover:bg-beige-100",
+                        ].join(" ")}
+                      >
+                        <span>{l === "en" ? dict.nav.english : dict.nav.malay}</span>
+                        <span className="text-xs font-semibold text-navy-400">{LOCALE_LABEL[l]}</span>
+                      </button>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </div>
 
@@ -281,7 +326,7 @@ export function Navbar() {
                     onWeavers ? "bg-white text-navy-900 shadow-sm" : "text-navy-700",
                   ].join(" ")}
                 >
-                  For Weavers
+                  {dict.nav.forWeavers}
                 </Link>
                 <Link
                   href={EMPLOYERS_HREF}
@@ -291,8 +336,31 @@ export function Navbar() {
                     onEmployers ? "bg-white text-navy-900 shadow-sm" : "text-navy-700",
                   ].join(" ")}
                 >
-                  For Employers
+                  {dict.nav.forEmployers}
                 </Link>
+              </div>
+
+              {/* Language toggle (mobile) */}
+              <div className="flex items-center gap-2">
+                <span className="flex items-center gap-1 text-xs font-semibold text-navy-500">
+                  <Globe className="w-3.5 h-3.5" /> {dict.nav.language}
+                </span>
+                <div className="flex items-center gap-1 bg-beige-200/70 border border-beige-300/70 rounded-full p-1">
+                  {LOCALES.map((l) => (
+                    <button
+                      key={l}
+                      type="button"
+                      onClick={() => setLocale(l)}
+                      aria-pressed={locale === l}
+                      className={[
+                        "px-3 py-1 rounded-full text-xs font-semibold transition-all",
+                        locale === l ? "bg-white text-navy-900 shadow-sm" : "text-navy-600",
+                      ].join(" ")}
+                    >
+                      {LOCALE_LABEL[l]}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {WEAVER_LINKS.map((col) => (
@@ -323,13 +391,13 @@ export function Navbar() {
                       className="block text-sm text-navy-700 hover:text-navy-900 px-3 py-2 rounded-lg hover:bg-beige-100 transition-colors"
                       onClick={() => setMobileOpen(false)}
                     >
-                      Dashboard
+                      {dict.nav.dashboard}
                     </Link>
                     <button
                       onClick={handleSignOut}
                       className="block w-full text-left text-sm text-red-600 px-3 py-2 rounded-lg hover:bg-red-50 transition-colors"
                     >
-                      Sign out
+                      {dict.nav.signOut}
                     </button>
                   </>
                 ) : (
@@ -339,14 +407,14 @@ export function Navbar() {
                       onClick={() => setMobileOpen(false)}
                       className="block w-full text-center py-2.5 rounded-full bg-navy-900 text-white text-sm font-semibold"
                     >
-                      Sign In
+                      {dict.nav.signIn}
                     </Link>
                     <Link
                       href="/signup"
                       onClick={() => setMobileOpen(false)}
                       className="block w-full text-center py-2.5 rounded-full border border-navy-300 text-navy-900 text-sm font-semibold"
                     >
-                      Sign Up
+                      {dict.nav.signUp}
                     </Link>
                   </div>
                 )}

@@ -3,6 +3,7 @@ import { Inter, Archivo_Black } from "next/font/google";
 import "./globals.css";
 import { ReduxProvider } from "@/components/providers/ReduxProvider";
 import { AuthProvider } from "@/components/providers/AuthProvider";
+import { LanguageProvider } from "@/components/i18n/LanguageProvider";
 import TenunGuideWidget from "@/components/site-guide/TenunGuideWidget";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
@@ -108,10 +109,12 @@ export default function RootLayout({
       <body className="min-h-screen antialiased font-sans">
           <ReduxProvider>
             <AuthProvider>
-              {children}
-              {/* Floating mascot guide — appears across the site (hides itself on
-                  auth-callback and preview/export routes). */}
-              <TenunGuideWidget />
+              <LanguageProvider>
+                {children}
+                {/* Floating mascot guide — appears across the site (hides itself on
+                    auth-callback and preview/export routes). */}
+                <TenunGuideWidget />
+              </LanguageProvider>
             </AuthProvider>
           </ReduxProvider>
         </body>

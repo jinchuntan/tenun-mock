@@ -25,6 +25,7 @@ type HistoryItem = { role: "user" | "assistant"; content: string };
 type RequestBody = {
   message?: string;
   history?: HistoryItem[];
+  locale?: "en" | "ms";
   pageContext?: {
     pathname?: string;
     pageTitle?: string;
@@ -45,9 +46,14 @@ type GuideResponse = {
 // invented or broken page.
 const ALLOWED_HREFS = new Set<string>(Object.values(GUIDE_ACTIONS).map((a) => a.href));
 
-function buildSystemPrompt(): string {
+function buildSystemPrompt(locale: "en" | "ms"): string {
   const supportEmail = getSupportEmail();
+  const languageRule =
+    locale === "ms"
+      ? `\nLANGUAGE: Reply ONLY in natural, friendly Malaysian Malay (Bahasa Melayu) — not Indonesian, not formal government style. Also translate the "label" of each suggested action into Malay, but keep the "href" values EXACTLY as given. Keep "Tenun" and "Weaver" as-is.`
+      : `\nLANGUAGE: Reply in clear, friendly English.`;
   return `You are the Tenun mascot guide — a friendly, cute, encouraging, slightly playful helper that guides users around the Tenun website. You speak naturally (not robotic), keep replies short and practical, and never overpromise.
+${languageRule}
 
 You help users navigate and understand the Tenun website.
 
@@ -163,8 +169,17 @@ function safeParse(text: string): GuideResponse | null {
   return { answer, confidence, suggestedActions, shouldEscalate, escalationMessage };
 }
 
-function escalationFallback(): GuideResponse {
+function escalationFallback(locale: "en" | "ms"): GuideResponse {
   const supportEmail = getSupportEmail();
+  if (locale === "ms") {
+    return {
+      answer: `Saya belum pasti tentang itu. Cara paling selamat ialah hubungi pasukan Tenun di ${supportEmail}, dan mereka boleh bantu anda terus.`,
+      confidence: "low",
+      suggestedActions: [],
+      shouldEscalate: true,
+      escalationMessage: `Hubungi pasukan Tenun di ${supportEmail}.`,
+    };
+  }
   return {
     answer: `I'm not fully sure about that yet. The safest next step is to contact the Tenun team at ${supportEmail}, and they can help you directly.`,
     confidence: "low",
@@ -180,8 +195,10 @@ export async function POST(request: Request) {
   const rateLimited = await checkRateLimit("site-guide", ip);
   if (rateLimited.limited) return rateLimited.response;
 
+  let locale: "en" | "ms" = "en";
   try {
     const body = (await request.json()) as RequestBody;
+    locale = body.locale === "ms" ? "ms" : "en";
 
     const message = typeof body.message === "string" ? body.message.trim() : "";
     if (!message) {
@@ -196,7 +213,7 @@ export async function POST(request: Request) {
 
     if (!process.env.OPENROUTER_API_KEY && !process.env.GROQ_API_KEY) {
       // No provider — degrade gracefully to an escalation rather than 500ing.
-      return NextResponse.json(escalationFallback());
+      return NextResponse.json(escalationFallback(locale));
     }
 
     const history = sanitizeHistory(body.history);
@@ -205,7 +222,7 @@ export async function POST(request: Request) {
     const { raw } = await generateJSONWithFallback({
       routeName: "site-guide",
       messages: [
-        { role: "system", content: buildSystemPrompt() },
+        { role: "system", content: buildSystemPrompt(locale) },
         ...history,
         { role: "user", content: `${contextLine}\n\nUser message: ${message}` },
       ],
@@ -213,11 +230,11 @@ export async function POST(request: Request) {
       maxTokens: 700,
     });
 
-    const result = safeParse(raw) ?? escalationFallback();
+    const result = safeParse(raw) ?? escalationFallback(locale);
     return NextResponse.json(result);
   } catch (err) {
     console.error("site-guide error:", err);
     // Never leak internals — return a friendly escalation instead.
-    return NextResponse.json(escalationFallback());
+    return NextResponse.json(escalationFallback(locale));
   }
 }

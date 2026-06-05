@@ -2,6 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, Loader2 } from "lucide-react";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 
 interface HeroSectionProps {
   query: string;
@@ -18,6 +19,9 @@ const isGenericQuery = (q: string) => q.trim().length > 0 && !q.trim().includes(
 export function HeroSection({
   query, setQuery, loading, hasResult, onSearch, examples,
 }: HeroSectionProps) {
+  const { dict, locale } = useLanguage();
+  const h = dict.home;
+  const gamesQuery = locale === "ms" ? `Saya nak ${query} permainan` : `I want to ${query} games`;
   return (
     <section
       className="relative pt-28 pb-12 md:pt-32 md:pb-16 overflow-hidden"
@@ -33,11 +37,11 @@ export function HeroSection({
           transition={{ duration: 0.6, delay: 0.05 }}
           className="font-display text-[2.5rem] leading-[0.95] sm:text-5xl lg:text-[3.5rem] xl:text-6xl tracking-tight text-navy-900 mb-5 lg:whitespace-nowrap"
         >
-          Don&apos;t know the job title
+          {h.heroTitleLine1}
           <br />
-          you&apos;re looking for?
+          {h.heroTitleLine2}
           <br />
-          <span className="gradient-gold">We got you, Weaver.</span>
+          <span className="gradient-gold">{h.heroTitleLine3}</span>
         </motion.h1>
 
         <motion.p
@@ -46,9 +50,7 @@ export function HeroSection({
           transition={{ duration: 0.6, delay: 0.15 }}
           className="text-base sm:text-lg text-navy-600 mb-8 max-w-xl mx-auto leading-relaxed"
         >
-          Whether you&apos;re just starting out or ready for your next move, tell us
-          what you enjoy and we&apos;ll find the right career path and connect you to
-          real jobs at top Malaysian companies.
+          {h.heroSubtitle}
         </motion.p>
 
         <motion.div
@@ -66,10 +68,10 @@ export function HeroSection({
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="e.g. I want to work with data, or I like designing things..."
+              placeholder={h.searchPlaceholder}
               className="w-full pr-32 py-5 rounded-full border border-beige-300 bg-white/90 text-sm sm:text-base text-navy-900 placeholder:text-navy-400 focus:outline-none focus:ring-4 focus:ring-gold-500/15 focus:border-gold-400 transition-all shadow-lg shadow-navy-900/5"
               style={{ paddingLeft: "3.25rem" }}
-              aria-label="Describe the kind of work you want to do"
+              aria-label={h.searchAria}
             />
             <button
               type="submit"
@@ -77,8 +79,8 @@ export function HeroSection({
               className="absolute right-2.5 top-1/2 -translate-y-1/2 flex items-center gap-1.5 px-5 py-3 rounded-full bg-navy-900 text-white text-sm font-semibold hover:bg-gold-500 hover:text-navy-900 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-navy-900 disabled:hover:text-white transition-all"
             >
               {loading
-                ? <><Loader2 className="w-4 h-4 animate-spin" /> Weaving...</>
-                : <>Explore</>}
+                ? <><Loader2 className="w-4 h-4 animate-spin" /> {h.weaving}</>
+                : <>{h.explore}</>}
             </button>
           </form>
 
@@ -91,12 +93,12 @@ export function HeroSection({
                 exit={{ opacity: 0 }}
                 className="text-xs text-navy-400 mt-3 text-center"
               >
-                Tip: describing what you enjoy gets better results, e.g.{" "}
+                {h.tip}{" "}
                 <button
-                  onClick={() => onSearch(`I want to ${query} games`)}
+                  onClick={() => onSearch(gamesQuery)}
                   className="text-navy-700 underline underline-offset-2 hover:text-navy-900"
                 >
-                  &ldquo;I want to {query} games&rdquo;
+                  &ldquo;{gamesQuery}&rdquo;
                 </button>
               </motion.p>
             )}

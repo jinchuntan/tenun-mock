@@ -2,37 +2,25 @@
 
 import { motion } from "framer-motion";
 import { Search, ListChecks, Route } from "lucide-react";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 
-const STEPS = [
-  {
-    icon: Search,
-    title: "Search in plain language",
-    body: "No job title needed. Type what you enjoy — 'I like working with numbers' or 'I want to make things look good.' Tenun maps it to 6 real careers.",
-  },
-  {
-    icon: ListChecks,
-    title: "See what it actually takes",
-    body: "Click any role to see the required skills, salary range, the secret sauce that sets top candidates apart, and an honest fit check.",
-  },
-  {
-    icon: Route,
-    title: "Get your personalised path",
-    body: "Sign in and upload your CV. We show exactly how you fit, what to improve, and match you to open roles at top Malaysian companies.",
-  },
-];
+const STEP_ICONS = [Search, ListChecks, Route];
 
 export function ThreeStepsSection() {
+  const { dict } = useLanguage();
+  const s = dict.threeSteps;
+  const STEPS = s.steps.map((step, i) => ({ ...step, icon: STEP_ICONS[i] }));
   return (
     <section id="how-it-works" className="py-16 md:py-24">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <div className="text-center mb-12">
           <p className="text-xs font-semibold text-gold-600 uppercase tracking-widest mb-2">
-            Simple. Fast. No fluff.
+            {s.eyebrow}
           </p>
           <h2 className="font-display text-3xl sm:text-4xl text-navy-900 leading-tight">
-            From curious to
+            {s.titleLine1}
             <br className="hidden sm:block" />{" "}
-            career-ready in 3 steps.
+            {s.titleLine2}
           </h2>
         </div>
 

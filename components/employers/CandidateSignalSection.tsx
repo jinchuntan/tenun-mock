@@ -2,47 +2,25 @@
 
 import { motion } from "framer-motion";
 import { Target, FolderGit2, TrendingUp, MessageSquare, CheckCircle2 } from "lucide-react";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 
-const CARDS = [
-  {
-    icon: Target,
-    badge: "82% Role Fit",
-    body: "Final-year data student with dashboard projects, SQL experience, and interest in financial services.",
-  },
-  {
-    icon: FolderGit2,
-    badge: "Portfolio Ready",
-    body: "Includes GitHub, case study, project write-up, and a role-specific CV summary.",
-  },
-  {
-    icon: TrendingUp,
-    badge: "Skill Gap Visible",
-    body: "Strong in Python and Excel. Still building stakeholder communication and business storytelling.",
-  },
-  {
-    icon: MessageSquare,
-    badge: "Interview Signal",
-    body: "Candidate has answered role-fit questions and understands the day-to-day expectations.",
-  },
-  {
-    icon: CheckCircle2,
-    badge: "Ready to Apply",
-    body: "Candidate has matched their CV, target role, salary expectation, and availability.",
-  },
-];
+const CARD_ICONS = [Target, FolderGit2, TrendingUp, MessageSquare, CheckCircle2];
 
 export function CandidateSignalSection() {
+  const { dict } = useLanguage();
+  const c = dict.candidateSignal;
+  const CARDS = c.cards.map((card, i) => ({ ...card, icon: CARD_ICONS[i] }));
   return (
     <section id="candidate-signal" className="py-16 md:py-24 bg-beige-100/60 border-y border-beige-300/50">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <div className="text-center mb-12 max-w-2xl mx-auto">
           <h2 className="font-display text-3xl sm:text-4xl text-navy-900 leading-tight mb-3">
-            Not just CVs. Candidate signal
+            {c.titleLine1}
             <br className="hidden sm:block" />{" "}
-            you can actually use.
+            {c.titleLine2}
           </h2>
           <p className="text-sm sm:text-base text-navy-600 leading-relaxed">
-            Tenun helps you understand why someone fits before you spend time screening.
+            {c.subtitle}
           </p>
         </div>
 

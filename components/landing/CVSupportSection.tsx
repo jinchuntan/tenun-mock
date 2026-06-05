@@ -3,41 +3,21 @@
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Clock, ArrowUpRight, FileText } from "lucide-react";
+import { useLanguage } from "@/components/i18n/LanguageProvider";
 
 const BUILD_CV_HREF = "/profile?upload=true&from=landing";
 
-const STATS = [
-  {
-    stat: "7 sec",
-    label: "average recruiter scan time",
-    body: "Numbers and keywords are the only things that stop the scroll. Generic descriptions get skipped instantly.",
-    rotate: -3,
-    mtClass: "",
-  },
-  {
-    stat: "85%",
-    label: "of CVs rejected by ATS before a human reads them",
-    body: "Tenun matches your skills to exactly what each company's system scans for — so you actually get seen.",
-    rotate: 2,
-    mtClass: "sm:mt-6",
-  },
-  {
-    stat: "3x",
-    label: "more callbacks with a targeted summary",
-    body: "Your opening line should answer one question: why should I keep reading?",
-    rotate: -2,
-    mtClass: "",
-  },
-  {
-    stat: "90%",
-    label: "of recruiters verify candidates online",
-    body: "LinkedIn and GitHub signal confidence and make their job easier. Adding them takes 10 seconds.",
-    rotate: 3,
-    mtClass: "sm:mt-6",
-  },
+const STAT_STYLES = [
+  { rotate: -3, mtClass: "" },
+  { rotate: 2, mtClass: "sm:mt-6" },
+  { rotate: -2, mtClass: "" },
+  { rotate: 3, mtClass: "sm:mt-6" },
 ];
 
 export function CVSupportSection() {
+  const { dict } = useLanguage();
+  const c = dict.cvSupport;
+  const STATS = c.stats.map((stat, i) => ({ ...stat, ...STAT_STYLES[i] }));
   return (
     <section className="py-16 md:py-24 bg-navy-900 relative overflow-hidden">
       <div className="absolute inset-0 dot-pattern opacity-[0.06] pointer-events-none" />
@@ -46,14 +26,12 @@ export function CVSupportSection() {
         {/* Heading + paragraph */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-10 items-end mb-14">
           <h2 className="font-display text-4xl sm:text-5xl text-white leading-[0.95]">
-            Don&apos;t stress.
+            {c.titleLine1}
             <br />
-            We&apos;ve got you.
+            {c.titleLine2}
           </h2>
           <p className="text-navy-200 text-sm sm:text-base leading-relaxed">
-            Most people don&apos;t know where to start — and that&apos;s completely fine.
-            We build your CV with you, keep it sharp as you grow, and make sure
-            you&apos;re always ready when the right door opens.
+            {c.paragraph}
           </p>
         </div>
 
@@ -85,7 +63,7 @@ export function CVSupportSection() {
                 href={BUILD_CV_HREF}
                 className="inline-flex items-center gap-1 text-xs font-semibold text-gold-700 hover:text-navy-900 transition-colors"
               >
-                View Sample <ArrowUpRight className="w-3.5 h-3.5" />
+                {c.viewSample} <ArrowUpRight className="w-3.5 h-3.5" />
               </Link>
             </motion.article>
           ))}
@@ -98,10 +76,10 @@ export function CVSupportSection() {
             className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-gold-500 text-navy-900 text-sm font-bold hover:bg-gold-400 transition-all shadow-lg shadow-gold-500/20"
           >
             <FileText className="w-4 h-4" />
-            Build my CV
+            {c.buildCv}
           </Link>
           <p className="text-xs text-navy-300 mt-4">
-            Ready to build yours? Free for Weavers. No credit card required.
+            {c.ctaNote}
           </p>
         </div>
       </div>
