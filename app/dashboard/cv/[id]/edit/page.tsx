@@ -23,6 +23,7 @@ import {
 } from "@/store/slices/cvSlice";
 import { BlockEditor } from "@/components/cv/blocks/BlockEditor";
 import { CVAssistant } from "@/components/cv/assistant/CVAssistant";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { HarvardTemplate } from "@/components/cv/templates/HarvardTemplate";
 import { CreativeTemplate } from "@/components/cv/templates/CreativeTemplate";
 import type { CVBlock, BlockType } from "@/lib/cv-types";
@@ -218,7 +219,7 @@ export default function EditCVPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#f5f0e8] flex items-center justify-center">
-        <div className="w-6 h-6 border-2 border-[#0a1628]/20 border-t-[#0a1628] rounded-full animate-spin" />
+        <LoadingSpinner size="lg" label="Loading your CV…" className="flex-col gap-3" labelClassName="text-sm" />
       </div>
     );
   }

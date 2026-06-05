@@ -1,13 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Sparkles, Loader2, Plus, Check, X, AlertTriangle, Wand2 } from "lucide-react";
+import { Sparkles, Plus, Check, X, AlertTriangle, Wand2, Send } from "lucide-react";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
   updateBlockContent, replaceBlockContent, addBlockWithContent,
 } from "@/store/slices/cvSlice";
 import type { BlockType, CVBlock } from "@/lib/cv-types";
 import { BLOCK_LABELS } from "@/lib/cv-types";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 
 type AssistantMode =
   | "generate_from_notes" | "improve_block" | "generate_bullets"
@@ -64,6 +65,33 @@ function chipsFor(type: BlockType): Chip[] {
   return [];
 }
 
+const DEFAULT_INSTRUCTION =
+  "Use the user's rough notes to generate truthful, professional CV suggestions for this selected section.";
+
+// Sensible default action for the free-form send (Enter / "Ask Tenun"),
+// chosen from the active section type.
+function defaultActionFor(block: CVBlock, hasNotes: boolean): { mode: AssistantMode; instruction: string } {
+  if (BULLET_TYPES.includes(block.type)) {
+    // With notes, draft new bullets from them; without, refine what's there.
+    return { mode: hasNotes ? "generate_bullets" : "refine_bullets", instruction: DEFAULT_INSTRUCTION };
+  }
+  return { mode: "improve_block", instruction: DEFAULT_INSTRUCTION };
+}
+
+// Whether the section already has content worth improving (so the assistant
+// can run even when the notes box is empty).
+function blockHasContent(block: CVBlock): boolean {
+  for (const k of ["bullets", "items"]) {
+    const v = block.content[k];
+    if (Array.isArray(v) && v.filter(Boolean).length > 0) return true;
+  }
+  for (const k of ["text", "description", "body", "summary", "heading"]) {
+    const v = block.content[k];
+    if (typeof v === "string" && v.trim()) return true;
+  }
+  return false;
+}
+
 function primaryField(content: Record<string, string | string[]>): { key: string; isList: boolean } | null {
   for (const k of ["bullets", "items", "text", "description", "body"]) {
     if (k in content) return { key: k, isList: k === "bullets" || k === "items" };
@@ -96,9 +124,13 @@ export function CVAssistant() {
   const [targetId, setTargetId] = useState<string | null>(null);
 
   const chips = activeBlock ? chipsFor(activeBlock.type) : [];
+  const hasNotes = notes.trim().length > 0;
+  const hasContent = activeBlock ? blockHasContent(activeBlock) : false;
+  const canSend = !loading && !!activeBlock && (hasNotes || hasContent);
 
-  async function run(chip: Chip) {
-    if (!activeBlock) return;
+  async function run(action: { mode: AssistantMode; instruction?: string }) {
+    // Guard prevents duplicate in-flight requests (Enter spam / double-click).
+    if (!activeBlock || loading) return;
     setLoading(true);
     setError(null);
     setWarnings([]);
@@ -109,8 +141,8 @@ export function CVAssistant() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          mode: chip.mode,
-          instruction: chip.instruction,
+          mode: action.mode,
+          instruction: action.instruction,
           targetJob: meta.targetJob,
           format: meta.format,
           style: meta.style,
@@ -146,6 +178,11 @@ export function CVAssistant() {
     } finally {
       setLoading(false);
     }
+  }
+
+  function handleSend() {
+    if (!activeBlock || !canSend) return;
+    run(defaultActionFor(activeBlock, hasNotes));
   }
 
   function valueFromCard(card: CardState): string | string[] {
@@ -222,14 +259,36 @@ export function CVAssistant() {
       <textarea
         value={notes}
         onChange={(e) => setNotes(e.target.value)}
+        onKeyDown={(e) => {
+          // Enter sends; Shift+Enter inserts a newline.
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            handleSend();
+          }
+        }}
         rows={3}
         placeholder={
           BULLET_TYPES.includes(activeBlock.type)
-            ? "e.g. Built backend APIs, used Perforce, helped teammates ship features"
-            : "Add any rough notes or context (optional)…"
+            ? "e.g. Built backend APIs, used Perforce, helped teammates ship features — or just say what you want"
+            : "Tell Tenun what to do, e.g. “make this sound stronger”…"
         }
-        className="w-full px-3 py-2 rounded-lg border border-gray-200 text-xs text-[#0a1628] placeholder:text-gray-300 focus:outline-none focus:border-gold-400 focus:ring-2 focus:ring-gold-500/15 transition-all resize-none"
+        className="w-full px-3 py-2 rounded-lg border border-gray-200 text-xs text-[#0a1628] placeholder:text-gray-300 focus:outline-none focus:border-gold-400 focus:ring-2 focus:ring-gold-500/15 transition-all resize-none disabled:opacity-60"
+        disabled={loading}
       />
+
+      {/* Primary send action */}
+      <div className="flex items-center justify-between gap-2">
+        <p className="text-[10px] text-gray-400">
+          {canSend || loading ? "Enter to send · Shift+Enter for a new line" : "Add a few rough notes first."}
+        </p>
+        <button
+          onClick={handleSend}
+          disabled={!canSend}
+          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#0a1628] text-white text-xs font-semibold hover:bg-[#1a2a4a] transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0"
+        >
+          {loading ? "Drafting…" : <><Send size={13} /> Ask Tenun</>}
+        </button>
+      </div>
 
       {chips.length > 0 ? (
         <div className="flex flex-wrap gap-1.5">
@@ -252,10 +311,12 @@ export function CVAssistant() {
       )}
 
       {loading && (
-        <div className="flex items-center gap-2 text-xs text-gray-500 py-2">
-          <Loader2 size={14} className="animate-spin text-gold-600" />
-          Tenun is drafting suggestions…
-        </div>
+        <LoadingSpinner
+          size="sm"
+          label="Tenun is drafting suggestions…"
+          className="py-2"
+          labelClassName="text-xs text-gray-500"
+        />
       )}
 
       {error && (

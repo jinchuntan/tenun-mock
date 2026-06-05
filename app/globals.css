@@ -183,4 +183,10 @@
   .animate-marquee {
     animation: marquee 30s linear infinite !important;
   }
+  /* Keep loading spinners rotating. A frozen spinner reads as "the app is
+     hung", which is worse for everyone (including reduced-motion users) than a
+     small, steady progress indicator. */
+  .animate-spin {
+    animation: spin 1s linear infinite !important;
+  }
 }
