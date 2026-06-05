@@ -122,7 +122,10 @@ export async function POST(request: Request) {
     const systemPrompt = locale === "ms" ? SYSTEM_PROMPT + MALAY_INSTRUCTION : SYSTEM_PROMPT;
 
     if (!process.env.OPENROUTER_API_KEY && !process.env.GROQ_API_KEY) {
-      return NextResponse.json({ error: "No API key configured." }, { status: 500 });
+      return NextResponse.json(
+        { error: "OpenRouter API key is not configured on the server (set OPENROUTER_API_KEY, or GROQ_API_KEY for fallback)." },
+        { status: 503 }
+      );
     }
 
     const { raw } = await generateJSONWithFallback({

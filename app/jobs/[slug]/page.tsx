@@ -123,9 +123,13 @@ export default function JobDetailPage() {
         locale,
       }),
     })
-      .then((r) => r.json())
+      .then(async (r) => {
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok || d?.error) throw new Error(d?.error || jd.loadError);
+        return d;
+      })
       .then((d) => setDetail(d))
-      .catch(() => setDetailError(jd.loadError))
+      .catch((e) => setDetailError(e instanceof Error ? e.message : jd.loadError))
       .finally(() => setDetailLoading(false));
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [job, locale]);

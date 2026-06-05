@@ -116,6 +116,9 @@ Copy `.env.example` → `.env.local` and fill in what you need. `.env.local` is 
 | `OPENROUTER_MODEL_JOB_DETAIL` | Model for job detail | same |
 | `OPENROUTER_MODEL_RESUME_PARSE` | Model for resume parsing | same |
 | `OPENROUTER_MODEL_SITE_GUIDE` | Model for Tenun Guide | same |
+| `OPENROUTER_MODEL_CV_GENERATE` | Model for the CV Generator | same |
+| `OPENROUTER_MODEL_CV_ASSISTANT` | Model for the in-editor CV Assistant | same |
+| `OPENROUTER_BASE_URL` | OpenRouter API base URL | `https://openrouter.ai/api/v1` |
 | `GROQ_MODEL` | Groq fallback model | `llama-3.3-70b-versatile` |
 | `OPENROUTER_SITE_URL` | OpenRouter attribution header | `http://localhost:3000` (set to your domain) |
 | `OPENROUTER_APP_NAME` | OpenRouter attribution | `Tenun` |
@@ -124,6 +127,26 @@ Copy `.env.example` → `.env.local` and fill in what you need. `.env.local` is 
 | `UPSTASH_REDIS_REST_TOKEN` | Upstash token | Rate limiting skipped |
 
 **Minimum viable setup:** just `OPENROUTER_API_KEY`.
+
+> ⚠️ **Server-side only.** AI keys must never be prefixed with `NEXT_PUBLIC_` — that would expose them to the browser.
+
+### Making AI work on Vercel (production)
+
+The AI keys are **not** bundled at build time — they're read at runtime on the server. You must add them in **Vercel → Project → Settings → Environment Variables → Production**, then **redeploy** (a plain refresh is not enough):
+
+```env
+OPENROUTER_API_KEY=your_key_here
+OPENROUTER_SITE_URL=https://tenun-mock.vercel.app
+OPENROUTER_APP_NAME=Tenun
+OPENROUTER_DATA_COLLECTION=deny
+# Optional fallback:
+GROQ_API_KEY=your_key_here
+```
+
+**Verify it works** (no keys are ever returned):
+
+- `GET /api/ai-health` → confirms `openrouterConfigured: true` and shows the resolved model ids.
+- `GET /api/ai-health?test=true` → makes a tiny real call and returns `test.openrouter.ok: true` when OpenRouter responds. If `ok` is `false`, the `status`/`error` fields explain why (e.g. invalid key `401`, unknown model `404`) so you can fix the key or override `OPENROUTER_MODEL_*`.
 
 ---
 
