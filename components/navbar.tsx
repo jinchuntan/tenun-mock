@@ -47,7 +47,7 @@ const WEAVER_LINKS: { group: string; links: { label: string; href: string }[] }[
 export function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
-  const onEmployers = pathname === "/employers";
+  const onEmployers = pathname?.startsWith("/employers");
   const onWeavers = pathname === "/";
   const [mobileOpen, setMobileOpen] = useState(false);
   const [user, setUser] = useState<User | null>(null);

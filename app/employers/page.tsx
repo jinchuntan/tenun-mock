@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { MotionConfig } from "framer-motion";
 import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
@@ -13,10 +14,14 @@ import { EmployerForm } from "@/components/employers/EmployerForm";
 import { EmployerFAQ } from "@/components/employers/EmployerFAQ";
 
 export default function EmployersPage() {
+  const router = useRouter();
   const [roleTitle, setRoleTitle] = useState("");
 
   const scrollToId = (id: string) =>
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+
+  const goToDashboard = (fallbackRole: string) =>
+    router.push(`/employers/dashboard?role=${encodeURIComponent(roleTitle.trim() || fallbackRole)}`);
 
   return (
     <MotionConfig reducedMotion="user">
@@ -27,9 +32,9 @@ export default function EmployersPage() {
           <EmployerHero
             roleTitle={roleTitle}
             setRoleTitle={setRoleTitle}
-            onFindCandidates={() => scrollToId("employer-form")}
+            onFindCandidates={() => goToDashboard("Software Engineer Intern")}
             onPostRole={() => scrollToId("employer-form")}
-            onViewPreview={() => scrollToId("portal-preview")}
+            onViewPreview={() => goToDashboard("Data Analyst Intern")}
           />
           <EmployerSteps />
           <CandidateSignalSection />
