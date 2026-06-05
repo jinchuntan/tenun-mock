@@ -4,7 +4,7 @@ import "./globals.css";
 import { ReduxProvider } from "@/components/providers/ReduxProvider";
 import { AuthProvider } from "@/components/providers/AuthProvider";
 import { LanguageProvider } from "@/components/i18n/LanguageProvider";
-import TenunGuideWidget from "@/components/site-guide/TenunGuideWidget";
+import TenunGuideVisibilityGate from "@/components/site-guide/TenunGuideVisibilityGate";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 // Heavy display face for big playful headlines (free, loaded via next/font)
@@ -111,9 +111,10 @@ export default function RootLayout({
             <AuthProvider>
               <LanguageProvider>
                 {children}
-                {/* Floating mascot guide — appears across the site (hides itself on
-                    auth-callback and preview/export routes). */}
-                <TenunGuideWidget />
+                {/* Floating mascot guide — temporarily restricted to landing pages
+                    ("/" and "/employers") while secondary-page UX is being polished.
+                    The gate controls WHERE it appears; the widget itself is unchanged. */}
+                <TenunGuideVisibilityGate />
               </LanguageProvider>
             </AuthProvider>
           </ReduxProvider>
