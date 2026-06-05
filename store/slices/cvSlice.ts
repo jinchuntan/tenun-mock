@@ -1,13 +1,12 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit";
-import { nanoid } from "@reduxjs/toolkit";
 import type {
   CVState, CVBlock, CVMeta, BlockType, CVStyle, CVFormat, SaveStatus,
 } from "@/lib/cv-types";
-import { DEFAULT_BLOCK_CONTENT, DEFAULT_BLOCK_ORDER } from "@/lib/cv-types";
+import { DEFAULT_BLOCK_CONTENT, DEFAULT_BLOCK_ORDER, newId } from "@/lib/cv-types";
 
 function makeBlock(type: BlockType): CVBlock {
   return {
-    id: nanoid(),
+    id: newId(),
     type,
     content: { ...DEFAULT_BLOCK_CONTENT[type] },
   };

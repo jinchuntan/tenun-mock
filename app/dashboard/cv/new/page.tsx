@@ -2,23 +2,35 @@
 
 import { useState, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { nanoid } from "@reduxjs/toolkit";
-import { FileText, Palette, Upload, PenLine, ChevronRight, ChevronLeft, Loader2 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import {
+  FileText, Palette, Upload, PenLine, ChevronRight, ChevronLeft, Loader2,
+  Sparkles, Paperclip, AlertCircle,
+} from "lucide-react";
 import { useAppDispatch } from "@/store/hooks";
-import { initCV, loadBlocks, setStyle, setFormat, setTargetJob } from "@/store/slices/cvSlice";
+import { initCV, loadBlocks } from "@/store/slices/cvSlice";
 import type { CVStyle, CVFormat, CVBlock } from "@/lib/cv-types";
-import { DEFAULT_BLOCK_CONTENT, DEFAULT_BLOCK_ORDER } from "@/lib/cv-types";
+import { DEFAULT_BLOCK_CONTENT, DEFAULT_BLOCK_ORDER, newId } from "@/lib/cv-types";
+import { createCVInSupabase } from "@/lib/cv-persist";
+import { buildBlocksFromGenerated } from "@/lib/cv-generate";
 
 type Step = "format" | "style" | "job" | "start";
 const STEPS: Step[] = ["format", "style", "job", "start"];
 
 function makeBlock(type: CVBlock["type"]): CVBlock {
-  return { id: nanoid(), type, content: { ...DEFAULT_BLOCK_CONTENT[type] } };
+  return { id: newId(), type, content: { ...DEFAULT_BLOCK_CONTENT[type] } };
 }
 
 function buildDefaultBlocks(): CVBlock[] {
   return DEFAULT_BLOCK_ORDER.map(makeBlock);
+}
+
+/** Read the user's saved language preference (set by the i18n LanguageProvider). */
+function readLocale(): "en" | "ms" {
+  try {
+    return window.localStorage.getItem("tenun-locale") === "ms" ? "ms" : "en";
+  } catch {
+    return "en";
+  }
 }
 
 function NewCVFlow() {
@@ -38,10 +50,15 @@ function NewCVFlow() {
     (searchParams.get("style") as CVStyle) ?? "harvard"
   );
   const [targetJob, setTargetJobState] = useState("");
+  const [genFile, setGenFile] = useState<File | null>(null);
+  const [generating, setGenerating] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [creating, setCreating] = useState(false);
-  const fileRef = useRef<HTMLInputElement>(null);
+  const [error, setError] = useState<string | null>(null);
+  const genFileRef = useRef<HTMLInputElement>(null);
+  const uploadFileRef = useRef<HTMLInputElement>(null);
 
+  const busy = generating || uploading || creating;
   const currentIdx = STEPS.indexOf(step);
 
   function prev() {
@@ -52,80 +69,92 @@ function NewCVFlow() {
     if (currentIdx < STEPS.length - 1) setStep(STEPS[currentIdx + 1]);
   }
 
-  async function createCVInDB(blocks: CVBlock[]): Promise<string | null> {
-    const supabase = createClient();
-    if (!supabase) return null;
+  const title = targetJob ? `CV for ${targetJob}` : "Untitled CV";
 
-    const id = nanoid();
-    const { error } = await supabase.from("cvs").insert({
-      id,
-      title: targetJob ? `CV for ${targetJob}` : "Untitled CV",
-      style,
-      format,
-      target_job: targetJob || null,
-    });
-    if (error) return null;
-
-    const blockRows = blocks.map((b, i) => ({
-      id: b.id,
-      cv_id: id,
-      type: b.type,
-      content: b.content,
-      position: i,
-    }));
-    await supabase.from("cv_blocks").insert(blockRows);
-    return id;
-  }
-
-  async function handleFresh() {
-    setCreating(true);
-    const blocks = buildDefaultBlocks();
-    const id = await createCVInDB(blocks);
-    if (!id) { setCreating(false); return; }
-
-    dispatch(initCV({ id, title: targetJob ? `CV for ${targetJob}` : "Untitled CV", style, format, targetJob }));
+  // Persist the new CV and move on to the editor. When Supabase isn't
+  // configured the save is skipped and the editor runs from Redux state.
+  async function finishCreate(blocks: CVBlock[]) {
+    const id = newId();
+    await createCVInSupabase({ id, title, style, format, targetJob }, blocks);
+    dispatch(initCV({ id, title, style, format, targetJob }));
     dispatch(loadBlocks(blocks));
     router.push(`/dashboard/cv/${id}/edit`);
   }
 
-  async function handleUpload(file: File) {
-    setUploading(true);
-
+  async function extractText(file: File): Promise<string> {
     const formData = new FormData();
     formData.append("file", file);
+    const res = await fetch("/api/extract-text", { method: "POST", body: formData });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || "Could not read that file. Please try another PDF.");
+    }
+    const { text } = await res.json();
+    return text ?? "";
+  }
 
+  async function handleGenerate() {
+    setError(null);
+    setGenerating(true);
     try {
-      const extractRes = await fetch("/api/extract-text", { method: "POST", body: formData });
-      const { text } = await extractRes.json();
+      const resumeText = genFile ? await extractText(genFile) : "";
+
+      const res = await fetch("/api/generate-cv", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ resumeText, targetJob, format, style, locale: readLocale() }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "Generation failed. Please try again.");
+      }
+
+      const { generated } = await res.json();
+      await finishCreate(buildBlocksFromGenerated(generated));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Something went wrong. Please try again.");
+      setGenerating(false);
+    }
+  }
+
+  async function handleFresh() {
+    setError(null);
+    setCreating(true);
+    try {
+      await finishCreate(buildDefaultBlocks());
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not create your CV. Please try again.");
+      setCreating(false);
+    }
+  }
+
+  async function handleUpload(file: File) {
+    setError(null);
+    setUploading(true);
+    try {
+      const text = await extractText(file);
 
       const parseRes = await fetch("/api/parse-resume", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text }),
       });
-      const { profile } = await parseRes.json();
+      const { profile } = parseRes.ok ? await parseRes.json() : { profile: null };
 
       const blocks = buildDefaultBlocks();
 
-      // Pre-fill personal info block
       const infoBlock = blocks.find((b) => b.type === "personal_info");
       if (infoBlock && profile?.name) infoBlock.content.name = profile.name;
 
-      // Pre-fill summary
       const summaryBlock = blocks.find((b) => b.type === "summary");
       if (summaryBlock && profile?.experience) summaryBlock.content.text = profile.experience;
 
-      // Pre-fill skills
       const skillsBlock = blocks.find((b) => b.type === "skills");
       if (skillsBlock && profile?.skills?.length) skillsBlock.content.items = profile.skills;
 
-      const id = await createCVInDB(blocks);
-      if (!id) { setUploading(false); return; }
-
-      dispatch(initCV({ id, title: targetJob ? `CV for ${targetJob}` : "Untitled CV", style, format, targetJob }));
-      dispatch(loadBlocks(blocks));
-      router.push(`/dashboard/cv/${id}/edit`);
-    } catch {
+      await finishCreate(blocks);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not import that file. Please try again.");
       setUploading(false);
     }
   }
@@ -231,52 +260,117 @@ function NewCVFlow() {
           {step === "start" && (
             <StepLayout title="How do you want to start?" onPrev={prev} canNext={false}>
               <div className="space-y-3">
-                <button
-                  onClick={handleFresh}
-                  disabled={creating}
-                  className="w-full flex items-center gap-3 p-4 rounded-xl border-2 border-gray-200 hover:border-[#0a1628] hover:bg-[#0a1628]/5 transition-all text-left disabled:opacity-50"
-                >
-                  <div className="w-9 h-9 rounded-lg bg-gray-50 flex items-center justify-center shrink-0">
-                    {creating ? <Loader2 size={18} className="animate-spin text-gray-400" /> : <PenLine size={18} className="text-gray-400" />}
+                {error && (
+                  <div className="flex items-start gap-2 p-3 rounded-lg bg-red-50 border border-red-100">
+                    <AlertCircle size={14} className="text-red-500 mt-0.5 shrink-0" />
+                    <p className="text-xs text-red-600 leading-snug">{error}</p>
                   </div>
-                  <div>
-                    <p className="font-medium text-[#0a1628] text-sm">Start fresh</p>
-                    <p className="text-xs text-gray-400">Blank canvas with suggested sections</p>
-                  </div>
-                </button>
+                )}
 
-                <button
-                  onClick={() => fileRef.current?.click()}
-                  disabled={uploading}
-                  className={[
-                    "w-full flex items-center gap-3 p-4 rounded-xl border-2 transition-all text-left disabled:opacity-50",
-                    uploadMode
-                      ? "border-[#d4a017] bg-[#d4a017]/10 ring-2 ring-[#d4a017]/30"
-                      : "border-gray-200 hover:border-[#0a1628] hover:bg-[#0a1628]/5",
-                  ].join(" ")}
-                >
-                  <div className="w-9 h-9 rounded-lg bg-gray-50 flex items-center justify-center shrink-0">
-                    {uploading ? <Loader2 size={18} className="animate-spin text-gray-400" /> : <Upload size={18} className={uploadMode ? "text-[#d4a017]" : "text-gray-400"} />}
-                  </div>
-                  <div>
-                    <p className="font-medium text-[#0a1628] text-sm flex items-center gap-2">
-                      Upload my existing CV
-                      {uploadMode && (
+                {/* Generate with AI — primary */}
+                <div className="rounded-xl border-2 border-[#d4a017] bg-[#d4a017]/5 p-4 space-y-3">
+                  <div className="flex items-center gap-2">
+                    <div className="w-9 h-9 rounded-lg bg-[#d4a017]/15 flex items-center justify-center shrink-0">
+                      <Sparkles size={18} className="text-[#d4a017]" />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-[#0a1628] text-sm flex items-center gap-2">
+                        Generate with AI
                         <span className="text-[10px] font-semibold uppercase tracking-wide text-[#d4a017]">Recommended</span>
-                      )}
-                    </p>
-                    <p className="text-xs text-gray-400">Upload your CV, resume, or portfolio document — we pre-fill the blocks for you</p>
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        We&apos;ll draft a complete {format === "cv" ? "CV" : "resume"}
+                        {targetJob ? ` for ${targetJob}` : ""} you can edit.
+                      </p>
+                    </div>
                   </div>
-                </button>
+
+                  {/* Optional file attach */}
+                  <button
+                    onClick={() => genFileRef.current?.click()}
+                    disabled={busy}
+                    className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg border border-dashed border-gray-300 bg-white text-left hover:border-[#d4a017] transition-colors disabled:opacity-50"
+                  >
+                    <Paperclip size={14} className="text-gray-400 shrink-0" />
+                    <span className="text-xs text-gray-500 truncate flex-1">
+                      {genFile ? genFile.name : "Attach an existing CV / resume / portfolio (PDF, optional)"}
+                    </span>
+                    {genFile && (
+                      <span
+                        role="button"
+                        tabIndex={0}
+                        onClick={(e) => { e.stopPropagation(); setGenFile(null); }}
+                        className="text-[11px] text-gray-400 hover:text-red-400 shrink-0"
+                      >
+                        Remove
+                      </span>
+                    )}
+                  </button>
+
+                  <button
+                    onClick={handleGenerate}
+                    disabled={busy}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-[#d4a017] text-[#0a1628] text-sm font-semibold hover:bg-[#e0ad1c] transition-colors disabled:opacity-60"
+                  >
+                    {generating ? (
+                      <><Loader2 size={15} className="animate-spin" /> Generating your {format === "cv" ? "CV" : "resume"}…</>
+                    ) : (
+                      <><Sparkles size={15} /> Generate CV</>
+                    )}
+                  </button>
+                </div>
+
+                {/* Secondary options */}
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={handleFresh}
+                    disabled={busy}
+                    className="flex items-center gap-2.5 p-3 rounded-xl border-2 border-gray-200 hover:border-[#0a1628] hover:bg-[#0a1628]/5 transition-all text-left disabled:opacity-50"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center shrink-0">
+                      {creating ? <Loader2 size={15} className="animate-spin text-gray-400" /> : <PenLine size={15} className="text-gray-400" />}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-medium text-[#0a1628] text-xs">Start fresh</p>
+                      <p className="text-[11px] text-gray-400 leading-tight">Blank sections</p>
+                    </div>
+                  </button>
+
+                  <button
+                    onClick={() => uploadFileRef.current?.click()}
+                    disabled={busy}
+                    className="flex items-center gap-2.5 p-3 rounded-xl border-2 border-gray-200 hover:border-[#0a1628] hover:bg-[#0a1628]/5 transition-all text-left disabled:opacity-50"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center shrink-0">
+                      {uploading ? <Loader2 size={15} className="animate-spin text-gray-400" /> : <Upload size={15} className="text-gray-400" />}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-medium text-[#0a1628] text-xs">Upload &amp; prefill</p>
+                      <p className="text-[11px] text-gray-400 leading-tight">Import without AI</p>
+                    </div>
+                  </button>
+                </div>
 
                 <input
-                  ref={fileRef}
+                  ref={genFileRef}
+                  type="file"
+                  accept="application/pdf"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) setGenFile(file);
+                    e.target.value = "";
+                  }}
+                />
+                <input
+                  ref={uploadFileRef}
                   type="file"
                   accept="application/pdf"
                   className="hidden"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) handleUpload(file);
+                    e.target.value = "";
                   }}
                 />
               </div>

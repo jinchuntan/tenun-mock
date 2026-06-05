@@ -34,8 +34,14 @@ export const autosaveMiddleware: Middleware<object, StateWithCV> =
       if (!supabase) { storeAPI.dispatch(setSaveStatus("error")); return; }
 
       try {
+        // user_id is required by the NOT NULL constraint and RLS policies on
+        // both cvs and cv_blocks — without it the upsert is rejected.
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) { storeAPI.dispatch(setSaveStatus("error")); return; }
+
         const { error: metaError } = await supabase.from("cvs").upsert({
           id: meta.id,
+          user_id: user.id,
           title: meta.title,
           style: meta.style,
           format: meta.format,
@@ -47,6 +53,7 @@ export const autosaveMiddleware: Middleware<object, StateWithCV> =
         const blockRows = blocks.allIds.map((blockId: string, position: number) => ({
           id: blockId,
           cv_id: meta.id,
+          user_id: user.id,
           type: blocks.byId[blockId].type,
           content: blocks.byId[blockId].content,
           position,
