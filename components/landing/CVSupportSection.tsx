@@ -2,16 +2,18 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Clock, ArrowUpRight, FileText } from "lucide-react";
+import { Clock, FileX2, PhoneCall, UserCheck, ArrowUpRight, FileText } from "lucide-react";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
 
 const BUILD_CV_HREF = "/profile?upload=true&from=landing";
 
+// Icon per stat: scan time (clock), ATS rejection (file-x), more callbacks
+// (phone), recruiters verifying candidates online (user-check).
 const STAT_STYLES = [
-  { rotate: -3, mtClass: "" },
-  { rotate: 2, mtClass: "sm:mt-6" },
-  { rotate: -2, mtClass: "" },
-  { rotate: 3, mtClass: "sm:mt-6" },
+  { rotate: -3, mtClass: "", icon: Clock },
+  { rotate: 2, mtClass: "sm:mt-6", icon: FileX2 },
+  { rotate: -2, mtClass: "", icon: PhoneCall },
+  { rotate: 3, mtClass: "sm:mt-6", icon: UserCheck },
 ];
 
 export function CVSupportSection() {
@@ -37,7 +39,9 @@ export function CVSupportSection() {
 
         {/* Tilted stat cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-14">
-          {STATS.map((s, i) => (
+          {STATS.map((s, i) => {
+            const Icon = s.icon;
+            return (
             <motion.article
               key={s.stat}
               initial={{ opacity: 0, y: 20, rotate: s.rotate }}
@@ -54,7 +58,7 @@ export function CVSupportSection() {
               className={`relative rounded-3xl bg-beige-100 border border-beige-300/40 p-5 shadow-xl shadow-black/20 hover:shadow-2xl hover:shadow-gold-500/25 hover:border-gold-400 ${s.mtClass}`}
             >
               <span className="absolute -top-3 -right-3 w-11 h-11 rounded-full bg-white border border-beige-300 shadow-md flex items-center justify-center">
-                <Clock className="w-5 h-5 text-navy-700" />
+                <Icon className="w-5 h-5 text-navy-700" />
               </span>
               <div className="font-display text-3xl text-navy-900 mb-1">{s.stat}</div>
               <p className="text-xs font-semibold text-navy-500 mb-3 leading-snug">{s.label}</p>
@@ -66,7 +70,8 @@ export function CVSupportSection() {
                 {c.viewSample} <ArrowUpRight className="w-3.5 h-3.5" />
               </Link>
             </motion.article>
-          ))}
+            );
+          })}
         </div>
 
         {/* CTA */}

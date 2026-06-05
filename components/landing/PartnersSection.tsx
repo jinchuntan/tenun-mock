@@ -6,7 +6,11 @@ import { ChevronRight } from "lucide-react";
 import { companies } from "@/lib/data/company-jobs";
 import { useLanguage } from "@/components/i18n/LanguageProvider";
 
-const ITEMS = [...companies, ...companies];
+// The marquee keyframe scrolls translateX(-50%), so the strip must be two
+// IDENTICAL halves. Each half repeats the company set enough times to stay wider
+// than any viewport — otherwise the loop reveals an empty gap before it resets.
+const HALF = [...companies, ...companies, ...companies];
+const ITEMS = [...HALF, ...HALF];
 
 export function PartnersSection() {
   const { dict } = useLanguage();
