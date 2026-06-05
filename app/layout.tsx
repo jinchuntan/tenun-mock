@@ -3,6 +3,7 @@ import { Inter, Archivo_Black } from "next/font/google";
 import "./globals.css";
 import { ReduxProvider } from "@/components/providers/ReduxProvider";
 import { AuthProvider } from "@/components/providers/AuthProvider";
+import TenunGuideWidget from "@/components/site-guide/TenunGuideWidget";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 // Heavy display face for big playful headlines (free, loaded via next/font)
@@ -108,6 +109,9 @@ export default function RootLayout({
           <ReduxProvider>
             <AuthProvider>
               {children}
+              {/* Floating mascot guide — appears across the site (hides itself on
+                  auth-callback and preview/export routes). */}
+              <TenunGuideWidget />
             </AuthProvider>
           </ReduxProvider>
         </body>
