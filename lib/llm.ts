@@ -13,7 +13,7 @@ export type LLMMessage = {
   content: string;
 };
 
-type RouteName = "job-intent" | "job-detail" | "parse-resume" | "site-guide" | "generate-cv";
+type RouteName = "job-intent" | "job-detail" | "parse-resume" | "site-guide" | "generate-cv" | "cv-assistant";
 
 export type GenerateJSONOptions = {
   routeName: RouteName;
@@ -48,6 +48,9 @@ function getOpenRouterModel(routeName: RouteName): string {
   }
   if (routeName === "generate-cv") {
     return process.env.OPENROUTER_MODEL_GENERATE_CV ?? DEFAULT_OPENROUTER_MODEL;
+  }
+  if (routeName === "cv-assistant") {
+    return process.env.OPENROUTER_MODEL_CV_ASSISTANT ?? DEFAULT_OPENROUTER_MODEL;
   }
   return process.env.OPENROUTER_MODEL_RESUME_PARSE ?? DEFAULT_OPENROUTER_MODEL;
 }

@@ -13,7 +13,8 @@ const DEBOUNCE_MS = 2000;
 
 const DIRTY_ACTIONS = new Set([
   "cv/setTitle", "cv/setStyle", "cv/setFormat", "cv/setTargetJob",
-  "cv/addBlock", "cv/removeBlock", "cv/updateBlockContent", "cv/reorderBlocks",
+  "cv/addBlock", "cv/addBlockWithContent", "cv/removeBlock",
+  "cv/updateBlockContent", "cv/replaceBlockContent", "cv/reorderBlocks",
 ]);
 
 export const autosaveMiddleware: Middleware<object, StateWithCV> =

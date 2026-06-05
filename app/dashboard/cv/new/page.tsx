@@ -100,6 +100,7 @@ function NewCVFlow() {
     (searchParams.get("style") as CVStyle) ?? "harvard"
   );
   const [targetJob, setTargetJobState] = useState("");
+  const [notes, setNotes] = useState("");
   const [genFile, setGenFile] = useState<File | null>(null);
   const [generating, setGenerating] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -147,7 +148,9 @@ function NewCVFlow() {
     setError(null);
     setGenerating(true);
     try {
-      const resumeText = genFile ? await extractText(genFile) : "";
+      const fileText = genFile ? await extractText(genFile) : "";
+      // Combine the user's rough notes with any uploaded text — both feed the draft.
+      const resumeText = [notes.trim(), fileText].filter(Boolean).join("\n\n");
 
       const res = await fetch("/api/generate-cv", {
         method: "POST",
@@ -335,14 +338,43 @@ function NewCVFlow() {
                     </div>
                     <div>
                       <p className="font-semibold text-[#0a1628] text-sm flex items-center gap-2">
-                        Generate with AI
+                        Tell Tenun what you&apos;ve done
                         <span className="text-[10px] font-semibold uppercase tracking-wide text-[#d4a017]">Recommended</span>
                       </p>
                       <p className="text-xs text-gray-500">
-                        We&apos;ll draft a complete {format === "cv" ? "CV" : "resume"}
+                        Describe your background in plain English — we&apos;ll turn it into a
+                        {" "}{format === "cv" ? "CV" : "resume"}
                         {targetJob ? ` for ${targetJob}` : ""} you can edit.
                       </p>
                     </div>
+                  </div>
+
+                  {/* Rough-notes input */}
+                  <textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    rows={4}
+                    placeholder={"e.g. I'm a software engineer. I write backend services and use Perforce to ship. I built a React + Supabase dashboard and led a student project."}
+                    className="w-full px-3 py-2.5 rounded-lg border border-gray-200 bg-white text-xs text-[#0a1628] placeholder:text-gray-300 focus:outline-none focus:border-[#d4a017] focus:ring-2 focus:ring-[#d4a017]/15 transition-all resize-none"
+                  />
+
+                  {/* Example starter chips */}
+                  <div className="flex flex-wrap gap-1.5">
+                    {[
+                      "I'm a software engineer",
+                      "I worked on backend systems",
+                      "I built a React + Supabase dashboard",
+                      "I led a student project",
+                    ].map((ex) => (
+                      <button
+                        key={ex}
+                        type="button"
+                        onClick={() => setNotes((n) => (n.trim() ? `${n.trim()}. ${ex}` : ex))}
+                        className="px-2.5 py-1 rounded-full border border-beige-300 bg-white text-[11px] text-gray-500 hover:border-[#d4a017] hover:text-[#0a1628] transition-colors"
+                      >
+                        + {ex}
+                      </button>
+                    ))}
                   </div>
 
                   {/* Optional file attach */}

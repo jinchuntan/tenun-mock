@@ -11,7 +11,10 @@ import {
   verticalListSortingStrategy, arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { GripVertical, Trash2, Plus, Eye, Save, ChevronLeft, LayoutDashboard } from "lucide-react";
+import {
+  GripVertical, Trash2, Plus, Eye, ChevronLeft, LayoutDashboard,
+  ChevronUp, ChevronDown, Lock, Sparkles, SlidersHorizontal,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useAppDispatch, useAppSelector } from "@/store/hooks";
 import {
@@ -19,6 +22,7 @@ import {
   removeBlock, setActiveBlock, reorderBlocks,
 } from "@/store/slices/cvSlice";
 import { BlockEditor } from "@/components/cv/blocks/BlockEditor";
+import { CVAssistant } from "@/components/cv/assistant/CVAssistant";
 import { HarvardTemplate } from "@/components/cv/templates/HarvardTemplate";
 import { CreativeTemplate } from "@/components/cv/templates/CreativeTemplate";
 import type { CVBlock, BlockType } from "@/lib/cv-types";
@@ -27,12 +31,20 @@ import { BLOCK_LABELS, PALETTE_BLOCKS } from "@/lib/cv-types";
 // ---------- Sortable block row ----------
 
 function SortableBlock({
-  block, isActive, onClick, onRemove,
+  block, isActive, isFirst, isLast, onClick, onRemove, onMove,
 }: {
-  block: CVBlock; isActive: boolean; onClick: () => void; onRemove: () => void;
+  block: CVBlock;
+  isActive: boolean;
+  isFirst: boolean;
+  isLast: boolean;
+  onClick: () => void;
+  onRemove: () => void;
+  onMove: (dir: -1 | 1) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: block.id });
+
+  const required = block.type === "personal_info"; // Personal Info can't be deleted
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -46,17 +58,19 @@ function SortableBlock({
       style={style}
       onClick={onClick}
       className={[
-        "flex items-center gap-2 px-3 py-2.5 rounded-lg border cursor-pointer transition-all group",
+        "flex items-center gap-1.5 px-2.5 py-2.5 rounded-lg border cursor-pointer transition-all group",
         isActive
           ? "border-[#0a1628] bg-[#0a1628]/5"
           : "border-gray-200 bg-white hover:border-gray-300",
       ].join(" ")}
     >
+      {/* Drag handle — primary on desktop (hidden on touch where up/down is used) */}
       <button
         {...attributes}
         {...listeners}
-        className="text-gray-300 hover:text-gray-400 cursor-grab active:cursor-grabbing shrink-0"
+        className="hidden sm:block text-gray-300 hover:text-gray-400 cursor-grab active:cursor-grabbing shrink-0"
         onClick={(e) => e.stopPropagation()}
+        aria-label={`Drag to reorder ${BLOCK_LABELS[block.type]}`}
       >
         <GripVertical size={14} />
       </button>
@@ -65,12 +79,39 @@ function SortableBlock({
         {BLOCK_LABELS[block.type]}
       </span>
 
-      <button
-        onClick={(e) => { e.stopPropagation(); onRemove(); }}
-        className="text-gray-200 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 shrink-0"
-      >
-        <Trash2 size={13} />
-      </button>
+      {/* Up/down reorder — keyboard- and touch-friendly fallback for drag-drop */}
+      <div className="flex items-center shrink-0">
+        <button
+          onClick={(e) => { e.stopPropagation(); onMove(-1); }}
+          disabled={isFirst}
+          aria-label={`Move ${BLOCK_LABELS[block.type]} up`}
+          className="p-0.5 text-gray-300 hover:text-gray-600 disabled:opacity-30 disabled:hover:text-gray-300 transition-colors"
+        >
+          <ChevronUp size={13} />
+        </button>
+        <button
+          onClick={(e) => { e.stopPropagation(); onMove(1); }}
+          disabled={isLast}
+          aria-label={`Move ${BLOCK_LABELS[block.type]} down`}
+          className="p-0.5 text-gray-300 hover:text-gray-600 disabled:opacity-30 disabled:hover:text-gray-300 transition-colors"
+        >
+          <ChevronDown size={13} />
+        </button>
+      </div>
+
+      {required ? (
+        <span className="shrink-0 text-gray-300" title="Required section — can't be removed" aria-label="Required section">
+          <Lock size={12} />
+        </span>
+      ) : (
+        <button
+          onClick={(e) => { e.stopPropagation(); onRemove(); }}
+          aria-label={`Remove ${BLOCK_LABELS[block.type]}`}
+          className="text-gray-200 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 shrink-0"
+        >
+          <Trash2 size={13} />
+        </button>
+      )}
     </div>
   );
 }
@@ -101,6 +142,7 @@ export default function EditCVPage() {
   const dispatch = useAppDispatch();
   const { meta, blocks, ui } = useAppSelector((s) => s.cv);
   const [loading, setLoading] = useState(true);
+  const [panelTab, setPanelTab] = useState<"edit" | "assistant">("edit");
 
   useEffect(() => {
     const supabase = createClient();
@@ -151,6 +193,13 @@ export default function EditCVPage() {
     const oldIndex = blocks.allIds.indexOf(active.id as string);
     const newIndex = blocks.allIds.indexOf(over.id as string);
     dispatch(reorderBlocks(arrayMove(blocks.allIds, oldIndex, newIndex)));
+  }
+
+  function moveBlock(id: string, dir: -1 | 1) {
+    const idx = blocks.allIds.indexOf(id);
+    const target = idx + dir;
+    if (idx === -1 || target < 0 || target >= blocks.allIds.length) return;
+    dispatch(reorderBlocks(arrayMove(blocks.allIds, idx, target)));
   }
 
   const activeBlock = ui.activeBlockId ? blocks.byId[ui.activeBlockId] : null;
@@ -228,7 +277,7 @@ export default function EditCVPage() {
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
               <SortableContext items={blocks.allIds} strategy={verticalListSortingStrategy}>
                 <div className="space-y-1">
-                  {blocks.allIds.map((blockId: string) => {
+                  {blocks.allIds.map((blockId: string, i: number) => {
                     const block = blocks.byId[blockId];
                     if (!block) return null;
                     return (
@@ -236,8 +285,11 @@ export default function EditCVPage() {
                         key={blockId}
                         block={block}
                         isActive={ui.activeBlockId === blockId}
+                        isFirst={i === 0}
+                        isLast={i === blocks.allIds.length - 1}
                         onClick={() => dispatch(setActiveBlock(blockId))}
                         onRemove={() => dispatch(removeBlock(blockId))}
+                        onMove={(dir) => moveBlock(blockId, dir)}
                       />
                     );
                   })}
@@ -271,26 +323,55 @@ export default function EditCVPage() {
           </div>
         </main>
 
-        {/* Right: property panel */}
+        {/* Right: property panel with Edit / Assistant tabs */}
         <aside className="w-72 shrink-0 bg-white border-l border-gray-200 flex flex-col overflow-hidden">
-          {activeBlock ? (
-            <>
-              <div className="p-4 border-b border-gray-100">
-                <p className="text-xs font-semibold text-[#0a1628]">{BLOCK_LABELS[activeBlock.type as keyof typeof BLOCK_LABELS]}</p>
-                <p className="text-[11px] text-gray-400 mt-0.5">Edit the fields below</p>
+          <div className="flex border-b border-gray-100 shrink-0">
+            <button
+              onClick={() => setPanelTab("edit")}
+              className={[
+                "flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors",
+                panelTab === "edit"
+                  ? "text-[#0a1628] border-b-2 border-[#0a1628]"
+                  : "text-gray-400 hover:text-gray-600",
+              ].join(" ")}
+            >
+              <SlidersHorizontal size={13} /> Edit fields
+            </button>
+            <button
+              onClick={() => setPanelTab("assistant")}
+              className={[
+                "flex-1 flex items-center justify-center gap-1.5 py-2.5 text-xs font-medium transition-colors",
+                panelTab === "assistant"
+                  ? "text-[#0a1628] border-b-2 border-[#d4a017]"
+                  : "text-gray-400 hover:text-gray-600",
+              ].join(" ")}
+            >
+              <Sparkles size={13} className={panelTab === "assistant" ? "text-[#d4a017]" : ""} /> Assistant
+            </button>
+          </div>
+
+          {panelTab === "edit" ? (
+            activeBlock ? (
+              <>
+                <div className="p-4 border-b border-gray-100">
+                  <p className="text-xs font-semibold text-[#0a1628]">{BLOCK_LABELS[activeBlock.type as keyof typeof BLOCK_LABELS]}</p>
+                  <p className="text-[11px] text-gray-400 mt-0.5">Edit the fields below</p>
+                </div>
+                <div className="flex-1 overflow-y-auto p-4">
+                  <BlockEditor block={activeBlock} />
+                </div>
+              </>
+            ) : (
+              <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
+                <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center mb-3">
+                  <SlidersHorizontal size={18} className="text-gray-300" />
+                </div>
+                <p className="text-xs font-medium text-gray-400">Select a section</p>
+                <p className="text-[11px] text-gray-300 mt-1">Click any section on the left to edit its content</p>
               </div>
-              <div className="flex-1 overflow-y-auto p-4">
-                <BlockEditor block={activeBlock} />
-              </div>
-            </>
+            )
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center p-6 text-center">
-              <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center mb-3">
-                <Save size={18} className="text-gray-300" />
-              </div>
-              <p className="text-xs font-medium text-gray-400">Select a section</p>
-              <p className="text-[11px] text-gray-300 mt-1">Click any section on the left to edit its content</p>
-            </div>
+            <CVAssistant />
           )}
         </aside>
       </div>
