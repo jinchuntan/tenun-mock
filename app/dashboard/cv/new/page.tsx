@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useRef, Suspense } from "react";
+import { useState, useRef, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   FileText, Palette, Upload, PenLine, ChevronRight, ChevronLeft, Loader2,
-  Sparkles, Paperclip, AlertCircle, Check,
+  Sparkles, Paperclip, AlertCircle, Check, ImageOff,
 } from "lucide-react";
 import { useAppDispatch } from "@/store/hooks";
 import { initCV, loadBlocks } from "@/store/slices/cvSlice";
@@ -14,6 +14,14 @@ import { DEFAULT_BLOCK_CONTENT, DEFAULT_BLOCK_ORDER, newId } from "@/lib/cv-type
 import { createCVInSupabase } from "@/lib/cv-persist";
 import { buildBlocksFromGenerated } from "@/lib/cv-generate";
 import { AppTopBar } from "@/components/layout/AppTopBar";
+import {
+  extractTextFromFile, ExtractionError,
+  ACCEPTED_FILE_EXTENSIONS, ACCEPTED_FILE_LABEL, MAX_FILE_SIZE_BYTES,
+} from "@/lib/file-extractors";
+import { PortfolioEvidenceInput } from "@/components/cv/PortfolioEvidenceInput";
+import type { PortfolioEvidence } from "@/lib/portfolio-types";
+import { emptyEvidence } from "@/lib/portfolio-types";
+import { loadEvidence } from "@/lib/portfolio-store";
 
 type Step = "format" | "style" | "job" | "start";
 const STEPS: Step[] = ["format", "style", "job", "start"];
@@ -106,8 +114,15 @@ function NewCVFlow() {
   const [uploading, setUploading] = useState(false);
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [evidence, setEvidence] = useState<PortfolioEvidence[]>([]);
+  const [extractionFallback, setExtractionFallback] = useState(false);
   const genFileRef = useRef<HTMLInputElement>(null);
   const uploadFileRef = useRef<HTMLInputElement>(null);
+
+  // Restore any portfolio/project evidence the user added previously.
+  useEffect(() => {
+    setEvidence(loadEvidence());
+  }, []);
 
   const busy = generating || uploading || creating;
   const currentIdx = STEPS.indexOf(step);
@@ -132,30 +147,56 @@ function NewCVFlow() {
     router.push(`/dashboard/cv/${id}/edit`);
   }
 
+  // Shared extractor — supports PDF (via the server route), DOCX (mammoth) and TXT.
   async function extractText(file: File): Promise<string> {
-    const formData = new FormData();
-    formData.append("file", file);
-    const res = await fetch("/api/extract-text", { method: "POST", body: formData });
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      throw new Error(data.error || "Could not read that file. Please try another PDF.");
-    }
-    const { text } = await res.json();
-    return text ?? "";
+    return extractTextFromFile(file);
+  }
+
+  /** Reveal the portfolio-evidence section with at least one empty project. */
+  function startProjectSummary() {
+    setExtractionFallback(false);
+    setGenFile(null);
+    if (evidence.length === 0) setEvidence([emptyEvidence()]);
   }
 
   async function handleGenerate() {
     setError(null);
+    setExtractionFallback(false);
+
+    if (genFile && genFile.size > MAX_FILE_SIZE_BYTES) {
+      setError("File too large. Maximum size is 5MB.");
+      return;
+    }
+
     setGenerating(true);
     try {
-      const fileText = genFile ? await extractText(genFile) : "";
-      // Combine the user's rough notes with any uploaded text — both feed the draft.
-      const resumeText = [notes.trim(), fileText].filter(Boolean).join("\n\n");
+      let fileText = "";
+      if (genFile) {
+        try {
+          fileText = await extractText(genFile);
+        } catch (err) {
+          // Image-based / empty file → don't dead-end. Offer the manual fallback.
+          if (err instanceof ExtractionError && (err.code === "image_based" || err.code === "empty")) {
+            setExtractionFallback(true);
+            setGenerating(false);
+            return;
+          }
+          throw err;
+        }
+      }
 
       const res = await fetch("/api/generate-cv", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ resumeText, targetJob, format, style, locale: readLocale() }),
+        body: JSON.stringify({
+          resumeText: fileText,
+          userNotes: notes,
+          portfolioEvidence: evidence,
+          targetJob,
+          format,
+          style,
+          locale: readLocale(),
+        }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -385,7 +426,7 @@ function NewCVFlow() {
                   >
                     <Paperclip size={14} className="text-gray-400 shrink-0" />
                     <span className="text-xs text-gray-500 truncate flex-1">
-                      {genFile ? genFile.name : "Attach an existing CV / resume / portfolio (PDF, optional)"}
+                      {genFile ? genFile.name : `Attach an existing CV / resume / portfolio (${ACCEPTED_FILE_LABEL}, optional)`}
                     </span>
                     {genFile && (
                       <span
@@ -398,6 +439,51 @@ function NewCVFlow() {
                       </span>
                     )}
                   </button>
+
+                  <p className="text-[11px] text-gray-400 leading-snug">
+                    For best results, upload a DOCX/TXT or text-based PDF. Visual portfolios (Canva, Figma,
+                    Adobe) can still be used — just add a project summary below.
+                  </p>
+
+                  {/* Image-based / empty file fallback — never a dead end */}
+                  {extractionFallback && (
+                    <div className="rounded-lg border border-[#d4a017]/40 bg-[#d4a017]/5 p-3 space-y-2.5">
+                      <div className="flex items-start gap-2">
+                        <ImageOff size={15} className="text-[#a97d12] mt-0.5 shrink-0" aria-hidden="true" />
+                        <p className="text-xs text-[#0a1628] leading-snug">
+                          We could not read text from this file. This usually happens with visual portfolios,
+                          scanned PDFs, or PDFs exported as images. You can still continue by adding a short
+                          project description below, adding a portfolio link, or uploading a DOCX/TXT version.
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={startProjectSummary}
+                          className="inline-flex items-center gap-1.5 rounded-md bg-[#0a1628] text-white px-2.5 py-1.5 text-[11px] font-semibold hover:bg-[#1a2a4a] transition-colors"
+                        >
+                          Add project summary
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setExtractionFallback(false); setGenFile(null); genFileRef.current?.click(); }}
+                          className="inline-flex items-center gap-1.5 rounded-md border border-beige-300 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-navy-700 hover:border-navy-300 transition-colors"
+                        >
+                          Try another file
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setGenFile(null); setExtractionFallback(false); handleGenerate(); }}
+                          className="inline-flex items-center gap-1.5 rounded-md border border-beige-300 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-navy-700 hover:border-navy-300 transition-colors"
+                        >
+                          Continue without this file
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Optional portfolio / project evidence */}
+                  <PortfolioEvidenceInput value={evidence} onChange={setEvidence} />
 
                   <button
                     onClick={handleGenerate}
@@ -446,18 +532,18 @@ function NewCVFlow() {
                 <input
                   ref={genFileRef}
                   type="file"
-                  accept="application/pdf"
+                  accept={ACCEPTED_FILE_EXTENSIONS}
                   className="hidden"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
-                    if (file) setGenFile(file);
+                    if (file) { setGenFile(file); setExtractionFallback(false); setError(null); }
                     e.target.value = "";
                   }}
                 />
                 <input
                   ref={uploadFileRef}
                   type="file"
-                  accept="application/pdf"
+                  accept={ACCEPTED_FILE_EXTENSIONS}
                   className="hidden"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
