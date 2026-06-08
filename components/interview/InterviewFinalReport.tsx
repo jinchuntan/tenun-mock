@@ -6,9 +6,21 @@ import type { FinalReport } from "./types";
 interface Props {
   report: FinalReport;
   onRestart: () => void;
+  /** Optional target role shown as a badge, e.g. "Product Manager". */
+  targetRole?: string;
+  /** Label preceding the target-role badge (i18n). */
+  roleLabel?: string;
+  /** Override the restart button label (i18n). */
+  restartLabel?: string;
 }
 
-export function InterviewFinalReport({ report, onRestart }: Props) {
+export function InterviewFinalReport({
+  report,
+  onRestart,
+  targetRole,
+  roleLabel,
+  restartLabel,
+}: Props) {
   return (
     <div className="bg-white rounded-2xl border border-beige-300 shadow-sm overflow-hidden">
       {/* Header with overall score */}
@@ -26,6 +38,12 @@ export function InterviewFinalReport({ report, onRestart }: Props) {
             <p className="text-xs text-white/60 mt-0.5">Overall interview score</p>
           </div>
         </div>
+        {targetRole && (
+          <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 border border-white/15">
+            {roleLabel && <span className="text-[11px] uppercase tracking-wide text-white/50">{roleLabel}</span>}
+            <span className="text-sm font-semibold text-[#f0d489]">{targetRole}</span>
+          </div>
+        )}
       </div>
 
       <div className="p-6 space-y-6">
@@ -54,7 +72,7 @@ export function InterviewFinalReport({ report, onRestart }: Props) {
           onClick={onRestart}
           className="w-full inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-[#0a1628] text-white text-sm font-semibold hover:bg-[#1a2a4a] transition-colors"
         >
-          <RotateCcw size={15} aria-hidden="true" /> Start a new interview
+          <RotateCcw size={15} aria-hidden="true" /> {restartLabel ?? "Start a new interview"}
         </button>
       </div>
     </div>

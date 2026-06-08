@@ -53,6 +53,11 @@ interface Props {
   /** BCP-47 language tag for recognition, e.g. "en-US" or "ms-MY". */
   lang?: string;
   placeholder?: string;
+  /** Notified whenever speech recognition starts/stops (drives call status). */
+  onListeningChange?: (listening: boolean) => void;
+  /** Notified once on mount with whether speech recognition is available. */
+  onSupportChange?: (supported: boolean) => void;
+  rows?: number;
 }
 
 export function VoiceAnswerInput({
@@ -61,11 +66,19 @@ export function VoiceAnswerInput({
   disabled = false,
   lang = "en-US",
   placeholder,
+  onListeningChange,
+  onSupportChange,
+  rows = 6,
 }: Props) {
   const [supported, setSupported] = useState(false);
   const [listening, setListening] = useState(false);
   const [interim, setInterim] = useState("");
   const [micError, setMicError] = useState<string | null>(null);
+
+  // Mirror listening state to the parent (so a call UI can show "Listening…").
+  useEffect(() => {
+    onListeningChange?.(listening);
+  }, [listening, onListeningChange]);
 
   const recognitionRef = useRef<SpeechRecognitionInstance | null>(null);
   // Keep the latest value in a ref so the recognition callbacks (created once)
@@ -77,11 +90,14 @@ export function VoiceAnswerInput({
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    setSupported(!!(window.SpeechRecognition || window.webkitSpeechRecognition));
+    const isSupported = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+    setSupported(isSupported);
+    onSupportChange?.(isSupported);
     // Stop any active recognition if the component unmounts mid-listen.
     return () => {
       recognitionRef.current?.abort();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function stopListening() {
@@ -151,7 +167,7 @@ export function VoiceAnswerInput({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           disabled={disabled}
-          rows={6}
+          rows={rows}
           placeholder={placeholder ?? "Type your answer here, or use the microphone to speak it."}
           aria-label="Your answer"
           className="w-full px-4 py-3 pb-12 rounded-xl border border-beige-300 bg-white text-sm text-navy-900 placeholder:text-navy-300 focus:outline-none focus:border-navy-400 focus:ring-2 focus:ring-[#d4a017]/20 transition-all resize-y disabled:opacity-60"

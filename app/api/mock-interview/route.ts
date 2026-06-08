@@ -12,9 +12,15 @@ import { generateJSONWithFallback } from "@/lib/llm";
  */
 
 type Mode = "start" | "evaluate_answer" | "next_question" | "final_report";
-type InterviewType = "general" | "behavioural" | "technical" | "cv_based";
+type InterviewType =
+  | "general"
+  | "behavioural"
+  | "technical"
+  | "case_study"
+  | "cv_based"
+  | "role_specific";
 type Difficulty = "easy" | "medium" | "challenging";
-type Locale = "en" | "ms";
+type Locale = "en" | "ms" | "zh-CN";
 
 interface Feedback {
   score?: number;
@@ -49,7 +55,9 @@ const INTERVIEW_TYPE_LABELS: Record<InterviewType, string> = {
   general: "General (a mix of common interview questions)",
   behavioural: "Behavioural (past situations, teamwork, conflict, leadership — STAR method)",
   technical: "Technical (role-specific knowledge and problem solving)",
+  case_study: "Case-style (work through a realistic business/role scenario, structure, and reasoning out loud)",
   cv_based: "CV-based (questions grounded in the candidate's pasted CV context)",
+  role_specific: "Role-specific (questions tailored tightly to the day-to-day of the target role)",
 };
 
 const DIFFICULTY_LABELS: Record<Difficulty, string> = {
@@ -59,19 +67,24 @@ const DIFFICULTY_LABELS: Record<Difficulty, string> = {
 };
 
 function localeRule(locale: Locale): string {
-  return locale === "ms"
-    ? 'Write ALL user-facing text (questions, summary, whatWentWell, toImprove, sampleAnswer, and the final report text) in natural Malaysian Malay (Bahasa Melayu). Keep every JSON key in English. Keep widely-used technical terms and proper nouns as-is.'
-    : "Write all user-facing text in clear, simple, professional English.";
+  if (locale === "ms") {
+    return 'Write ALL user-facing text (questions, summary, whatWentWell, toImprove, sampleAnswer, and the final report text) in natural Malaysian Malay (Bahasa Melayu). Keep every JSON key in English. Keep widely-used technical terms and proper nouns as-is.';
+  }
+  if (locale === "zh-CN") {
+    return 'Write ALL user-facing text (questions, summary, whatWentWell, toImprove, sampleAnswer, and the final report text) in Simplified Chinese (简体中文). Keep every JSON key in English. Keep widely-used technical terms and proper nouns as-is.';
+  }
+  return "Write all user-facing text in clear, simple, professional English.";
 }
 
-const INTERVIEWER_RULES = `You are "Tenun Interview Coach", a friendly but rigorous AI interviewer that helps a candidate practise for a real job interview. This is an interview-practice tool, not a chatbot.
+const INTERVIEWER_RULES = `You are "Aina", a warm, credible, but rigorous AI interview coach running a LIVE mock interview call with a candidate. The candidate may be speaking their answers aloud, so write in a natural, spoken, conversational tone — as a real interviewer on a video call would. This is an interview-practice tool, not a chatbot.
 
 Rules:
-- Ask ONE interview question at a time. Never ask multiple questions in a single turn.
-- Tailor every question to the target role, interview type, and difficulty.
+- Ask EXACTLY ONE interview question per turn. Never bundle multiple questions, and never put several questions behind "and" or "also".
+- When asking a follow-up question (not the first), you MAY open with a short, warm one-sentence acknowledgement of the previous answer, then ask exactly one question. Keep it brief and human.
+- Tailor every question to the target role, interview type, and difficulty. For "Role-specific", focus tightly on the real day-to-day of the target role. For "Case-style", pose a realistic scenario and ask the candidate to reason through it.
 - Evaluate answers on five dimensions: relevance, structure, specificity, impact, and communication.
 - For behavioural questions, encourage the STAR method (Situation, Task, Action, Result).
-- Keep feedback practical, specific, and encouraging. Never be harsh, sarcastic, or dismissive.
+- Give realistic, specific feedback tied to the target role and interview type — not generic platitudes. Be encouraging; never harsh, sarcastic, or dismissive.
 - NEVER invent achievements, employers, metrics, dates, or experience the candidate did not state. A "sampleAnswer" is an illustrative model answer the candidate can learn from — make it clearly a template, never attributed facts about this candidate.
 - If an answer is empty, off-topic, or far too vague to assess, give a low score (0-3), say so kindly in the summary, and tell the candidate to add a concrete example with more detail in "toImprove".`;
 
@@ -227,7 +240,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Missing question to evaluate." }, { status: 400 });
     }
 
-    const locale: Locale = body.locale === "ms" ? "ms" : "en";
+    const locale: Locale = body.locale === "ms" ? "ms" : body.locale === "zh-CN" ? "zh-CN" : "en";
 
     const { raw, provider } = await generateJSONWithFallback({
       routeName: "mock-interview",
